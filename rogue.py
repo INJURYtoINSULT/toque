@@ -48,21 +48,41 @@ class Object:
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
 
 ##################################
+# Dungeon parts
+##################################
+
+class Rect:
+    #A rectangle for creating a room
+    def __init__(self, x, y, w, h):
+        self.x1 = x
+        self.y1 = y
+        self.x2 = x + w
+        self.y2 = y + h
+
+def create_room(room):
+    global map
+    #Make floor tiles passable
+    for x in range(room.x1 + 1, room.x2):
+        for y in range(room.y1 + 1, room.y2):
+            map[x][y].blocked = False
+            map[x][y].block_sight = False
+
+##################################
 # Functions
 ##################################
 
 def make_map():
     global map
     #fill map with "unblocked" tiles
-    map = [[ Tile(False)
+    map = [[ Tile(True)
     for y in range(MAP_HEIGHT) ]
         for x in range(MAP_WIDTH) ]
             
     #place two pillars to test the map     
-    map[30][22].blocked = True
-    map[30][22].block_sight = True
-    map[50][22].blocked = True
-    map[50][22].block_sight = True
+    room1 = Rect(20, 15, 10, 15)
+    room2 = Rect(50, 15, 10, 15)
+    create_room(room1)
+    create_room(room2)
 
 def render_all():
     global color_dark_wall
