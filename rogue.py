@@ -8,10 +8,10 @@ MAP_HEIGHT = 45
 
 LIMIT_FPS = 20
 
-color_light_wall = libtcod.Color(0, 0, 100)
-color_dark_wall = libtcod.Color(130, 110, 50)
-color_light_ground = libtcod.Color(50, 50, 150)
-color_dark_ground = libtcod.Color(200, 180, 50)
+color_dark_wall = libtcod.Color(0, 0, 100)
+color_light_wall = libtcod.Color(130, 110, 50)
+color_dark_ground = libtcod.Color(50, 50, 150)
+color_light_ground = libtcod.Color(200, 180, 50)
 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
@@ -29,6 +29,9 @@ class Tile:
     #Map tile and its properties
     def __init__(self, blocked, block_sight = None):
         self.blocked = blocked
+        
+        #Tiles start unexplored
+        self.explored = False
 
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
@@ -171,18 +174,22 @@ def render_all():
             for x in range(MAP_WIDTH):
                 visible = libtcod.map_is_in_fov(fov_map, x, y)
                 wall = map[x][y].block_sight
-                if visible:
-                    #It is out of FOV
-                    if wall:
-                        libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
-                    else:
-                        libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
+                if not visible:
+                    #If it's not visible right now, the player can only see it if it is already explored
+                    if map[x][y].explored:
+                        #It is out of FOV
+                        if wall:
+                            libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
+                        else:
+                            libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
                 else:
                     #It's visible
                     if wall:
                         libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET)
                     else:
                         libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET)
+                    #Since it is visible, explore it
+                    map[x][y].explored = True
 
     #draw all objects in the list
     for object in objects:
