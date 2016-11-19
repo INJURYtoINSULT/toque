@@ -8,12 +8,18 @@ MAP_HEIGHT = 45
 
 LIMIT_FPS = 20
 
-color_dark_wall = libtcod.Color(0, 0, 100)
-color_dark_ground = libtcod.Color(50, 50, 150)
+color_light_wall = libtcod.Color(0, 0, 100)
+color_dark_wall = libtcod.Color(130, 110, 50)
+color_light_ground = libtcod.Color(50, 50, 150)
+color_dark_ground = libtcod.Color(200, 180, 50)
 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
+
+FOV_ALGO = 0
+FOV_LIGHT_WALLS = True
+TORCH_RADIUS = 10
 
 ##################################
 # Generic Classes
@@ -43,9 +49,11 @@ class Object:
             self.y += dy
 
     def draw(self):
-        #set color, draw character
-        libtcod.console_set_default_foreground(con, self.color)
-        libtcod.console_put_char(con, self.x, self.y, self.char, libtcod.BKGND_NONE)
+        #Only show if it is in fov
+        if libtcod.map_is_in_fov(fov_map, self.x, self.y):
+            #set color, draw character
+            libtcod.console_set_default_foreground(con, self.color)
+            libtcod.console_put_char(con, self.x, self.y, self.char, libtcod.BKGND_NONE)
 
     def clear(self):
         #erase the character that represents this object
@@ -151,17 +159,31 @@ def make_map():
             num_rooms += 1
 
 def render_all():
-    global color_dark_wall
-    global color_dark_ground
+    global fov_map, color_dark_wall, color_light_wall
+    global color_dark_ground, color_light_ground
+    global fov_recompute
 
-    for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
-            wall = map[x][y].block_sight
-            if wall:
-                libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
-            else:
-                libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
-    
+    if fov_recompute:
+        #Recompute FOV
+        fov_recompute = False
+        libtcod.map_compute_fov(fov_map, player.x, player.y, TORCH_RADIUS, FOV_LIGHT_WALLS, FOV_ALGO)
+        for y in range(MAP_HEIGHT):
+            for x in range(MAP_WIDTH):
+                visible = libtcod.map_is_in_fov(fov_map, x, y)
+                wall = map[x][y].block_sight
+                if visible:
+                    #It is out of FOV
+                    if wall:
+                        libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
+                    else:
+                        libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
+                else:
+                    #It's visible
+                    if wall:
+                        libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET)
+                    else:
+                        libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET)
+
     #draw all objects in the list
     for object in objects:
         object.draw()
@@ -171,6 +193,8 @@ def render_all():
 
 
 def handle_keys():
+    global fov_recompute
+
     key = libtcod.console_wait_for_keypress(True)
     
     if key.vk == libtcod.KEY_ENTER and key.lalt: #Alt+Enter: toggle fullscreen
@@ -182,15 +206,19 @@ def handle_keys():
     #Movement Keys
     if libtcod.console_is_key_pressed(libtcod.KEY_UP):
         player.move(0, -1)
+        fov_recompute = True
 
     elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
         player.move(0, 1)
+        fov_recompute = True
 
     elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
         player.move(-1, 0)
+        fov_recompute = True
 
     elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
         player.move(1, 0)
+        fov_recompute = True
 
 ##################################
 # Initializations
@@ -212,6 +240,14 @@ objects = [npc, player]
 
 #Generate Map
 make_map()
+
+#Create FOV Map
+fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
+for y in range(MAP_HEIGHT):
+    for x in range(MAP_WIDTH):
+        libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
+
+fov_recompute = True
 
 ##################################
 # Main Loop
