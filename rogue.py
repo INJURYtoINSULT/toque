@@ -11,6 +11,9 @@ LIMIT_FPS = 20
 color_dark_wall = libtcod.Color(0, 0, 100)
 color_dark_ground = libtcod.Color(50, 50, 150)
 
+##################################
+# Generic Classes
+##################################
 
 class Tile:
     #Map tile and its properties
@@ -43,6 +46,10 @@ class Object:
     def clear(self):
         #erase the character that represents this object
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
+
+##################################
+# Functions
+##################################
 
 def make_map():
     global map
