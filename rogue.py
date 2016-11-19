@@ -67,6 +67,18 @@ def create_room(room):
             map[x][y].blocked = False
             map[x][y].block_sight = False
 
+def create_h_tunnel(x1, x2, y):
+    global map
+    for x in range(min(x1, x2), max(x1, x2) + 1):
+        map[x][y].blocked = False
+        map[x][y].block_sight = False
+
+def create_v_tunnel(y1, y2, x):
+    global map
+    for y in range(min(y1, y2), max(y1, y2) + 1):
+        map[x][y].blocked = False
+        map[x][y].block_sight = False
+
 ##################################
 # Functions
 ##################################
@@ -83,6 +95,7 @@ def make_map():
     room2 = Rect(50, 15, 10, 15)
     create_room(room1)
     create_room(room2)
+    create_h_tunnel(25, 55, 23)
 
 def render_all():
     global color_dark_wall
@@ -136,10 +149,10 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 #Create objects representing the player
-player = Object(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, '@', libtcod.white)
+player = Object(25, 23, '@', libtcod.white)
 
 #Create an NPC
-npc = Object(SCREEN_WIDTH/2 - 5, SCREEN_HEIGHT/2, '@', libtcod.yellow)
+npc = Object(25, 26, '@', libtcod.yellow)
 
 #The list of objects of those two
 objects = [npc, player]
