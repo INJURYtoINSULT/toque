@@ -11,6 +11,10 @@ LIMIT_FPS = 20
 color_dark_wall = libtcod.Color(0, 0, 100)
 color_dark_ground = libtcod.Color(50, 50, 150)
 
+ROOM_MAX_SIZE = 10
+ROOM_MIN_SIZE = 6
+MAX_ROOMS = 30
+
 ##################################
 # Generic Classes
 ##################################
@@ -58,6 +62,15 @@ class Rect:
         self.y1 = y
         self.x2 = x + w
         self.y2 = y + h
+    
+    def center(self):
+        center_x = (self.x1 + self.x2) / 2
+        center_y = (self.y1 + self.y2) / 2
+        return (center_x, center_y)
+
+    def intersect(self, other):
+        #Returns true if this rect intersects with another
+        return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
 
 def create_room(room):
     global map
@@ -85,17 +98,57 @@ def create_v_tunnel(y1, y2, x):
 
 def make_map():
     global map
-    #fill map with "unblocked" tiles
+
+    #Fill map with "blocked" tiles
     map = [[ Tile(True)
     for y in range(MAP_HEIGHT) ]
         for x in range(MAP_WIDTH) ]
             
-    #place two pillars to test the map     
-    room1 = Rect(20, 15, 10, 15)
-    room2 = Rect(50, 15, 10, 15)
-    create_room(room1)
-    create_room(room2)
-    create_h_tunnel(25, 55, 23)
+    #Generate rooms     
+    rooms = []
+    num_rooms = 0
+
+    for r in range(MAX_ROOMS):
+        #Random width and height
+        w = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+        h = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+        #Random position without going out of boundaries
+        x = libtcod.random_get_int(0, 0, MAP_WIDTH - w - 1)
+        y = libtcod.random_get_int(0, 0, MAP_HEIGHT - h - 1)
+    
+        #"Rect" class makes rectangles easier to work with
+        new_room = Rect(x, y, w, h)
+
+        #Run through the other rooms and see if they intersect with the others
+        failed = False
+        for other_room in rooms:
+            if new_room.intersect(other_room):
+                failed = True
+                break
+
+        if not failed:
+            create_room(new_room)
+    
+            (new_x, new_y) = new_room.center()
+        
+            if num_rooms == 0:
+                player.x = new_x
+                player.y = new_y
+            else:
+                (prev_x, prev_y) = rooms[num_rooms - 1].center()
+
+                #Flip a coin
+                if libtcod.random_get_int(0, 0, 1) == 1:
+                    #First move horizontally, then vertically
+                    create_h_tunnel(prev_x, new_x, prev_y)
+                    create_v_tunnel(prev_y, new_y, new_x)
+                else:
+                    #First move vertically, then horizonally
+                    create_v_tunnel(prev_y, new_y, prev_x)
+                    create_h_tunnel(prev_x, new_x, new_y)
+
+            rooms.append(new_room)
+            num_rooms += 1
 
 def render_all():
     global color_dark_wall
