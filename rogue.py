@@ -16,6 +16,7 @@ color_light_ground = libtcod.Color(200, 180, 50)
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
+MAX_ROOM_MONSTERS = 3
 
 FOV_ALGO = 0
 FOV_LIGHT_WALLS = True
@@ -158,8 +159,29 @@ def make_map():
                     create_v_tunnel(prev_y, new_y, prev_x)
                     create_h_tunnel(prev_x, new_x, new_y)
 
+            #Throw in some monsters
+            place_objects(new_room)
+
             rooms.append(new_room)
             num_rooms += 1
+
+def place_objects(room):
+    #Choose random number of monsters
+    num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
+
+    for i in range(num_monsters):
+        #Random position in room
+        x = libtcod.random_get_int(0, room.x1, room.x2)
+        y = libtcod.random_get_int(0, room.y1, room.y2)
+
+        if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
+            #Create an orc
+            monster = Object(x, y, 'o', libtcod.desaturated_green)
+        else:
+            #Create a troll
+            monster = Object(x, y, 'T', libtcod.darker_green)
+
+        objects.append(monster)
 
 def render_all():
     global fov_map, color_dark_wall, color_light_wall
