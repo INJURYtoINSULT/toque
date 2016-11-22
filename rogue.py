@@ -171,8 +171,8 @@ def place_objects(room):
 
     for i in range(num_monsters):
         #Random position in room
-        x = libtcod.random_get_int(0, room.x1, room.x2)
-        y = libtcod.random_get_int(0, room.y1, room.y2)
+        x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
+        y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
 
         if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
             #Create an orc
@@ -261,11 +261,8 @@ con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 #Create objects representing the player
 player = Object(25, 23, '@', libtcod.white)
 
-#Create an NPC
-npc = Object(25, 26, '@', libtcod.yellow)
-
 #The list of objects of those two
-objects = [npc, player]
+objects = [player]
 
 #Generate Map
 make_map()
