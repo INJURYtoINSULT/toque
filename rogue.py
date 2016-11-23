@@ -235,6 +235,26 @@ def render_all():
     #Blit to con
     libtcod.console_blit(con, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0)
 
+def player_move_or_attack(dx, dy):
+    global fov_recompute
+
+    #The coordinates the player is moving to/attacking
+    x = player.x + dx
+    y = player.y + dy
+
+    #Try to find an attackable object there
+    target = None
+    for object in objects:
+        if object.x == x and object.y == y:
+            target = object
+            break
+
+    #Attack if target found
+    if target is not None:
+        print 'The ' + target.name + ' laughs at your efforts to attack it!'
+    else:
+        player.move(dx, dy)
+        fov_recompute = True
 
 def handle_keys():
     global fov_recompute
@@ -250,20 +270,17 @@ def handle_keys():
     if game_state == 'playing':
         #Movement Keys
         if libtcod.console_is_key_pressed(libtcod.KEY_UP):
-            player.move(0, -1)
-            fov_recompute = True
+            player_move_or_attack(0, -1)
 
         elif libtcod.console_is_key_pressed(libtcod.KEY_DOWN):
-            player.move(0, 1)
-            fov_recompute = True
+            player_move_or_attack(0, 1)
 
         elif libtcod.console_is_key_pressed(libtcod.KEY_LEFT):
-            player.move(-1, 0)
-            fov_recompute = True
+            player_move_or_attack(-1, 0)
 
         elif libtcod.console_is_key_pressed(libtcod.KEY_RIGHT):
-            player.move(1, 0)
-            fov_recompute = True
+            player_move_or_attack(1, 0)
+        
         else:
             return 'didnt-take-turn'
 
@@ -308,6 +325,13 @@ while not libtcod.console_is_window_closed():
     for object in objects:
         object.clear()
 
+    #Player turn
     player_action = handle_keys()
     if player_action == 'exit':
         break
+
+    #Let monsters take their turn
+    if game_state == 'playing' and player_action != 'didnt-take-turn':
+        for object in objects:
+            if object != player:
+                print 'The ' + object.name + ' growls!'
