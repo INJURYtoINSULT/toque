@@ -40,15 +40,17 @@ class Tile:
 
 class Object:
     #Generic object
-    def __init__(self, x, y, char, color):
+    def __init__(self, x, y, char, name, color, blocks = False):
         self.x = x
         self.y = y
         self.char = char
+        self.name = name
         self.color = color
+        self.blocks = blocks
 
     def move(self, dx, dy):
         #move by given amount
-        if not map[self.x + dx][self.y + dy].blocked:
+        if not is_blocked(self.x + dx, self.y + dy):
             self.x += dx
             self.y += dy
 
@@ -62,6 +64,18 @@ class Object:
     def clear(self):
         #erase the character that represents this object
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
+
+def is_blocked(x, y):
+    #First test map tile
+    if map[x][y].blocked:
+        return True
+
+    #Now check Objects
+    for object in objects:
+        if object.blocks and object.x == x and object.y == y:
+            return True
+    
+    return False
 
 ##################################
 # Dungeon parts
@@ -174,14 +188,15 @@ def place_objects(room):
         x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
         y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
 
-        if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
-            #Create an orc
-            monster = Object(x, y, 'o', libtcod.desaturated_green)
-        else:
-            #Create a troll
-            monster = Object(x, y, 'T', libtcod.darker_green)
+        if not is_blocked(x, y):
+            if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
+                #Create an orc
+                monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks = True)
+            else:
+                #Create a troll
+                monster = Object(x, y, 'T', 'troll', libtcod.darker_green, blocks = True)
 
-        objects.append(monster)
+            objects.append(monster)
 
 def render_all():
     global fov_map, color_dark_wall, color_light_wall
@@ -259,7 +274,7 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 #Create objects representing the player
-player = Object(25, 23, '@', libtcod.white)
+player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True)
 
 #The list of objects of those two
 objects = [player]
