@@ -1,4 +1,5 @@
 import libtcodpy as libtcod
+import math
 
 SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
@@ -55,10 +56,28 @@ class Object:
             self.ai.owner = self
 
     def move(self, dx, dy):
-        #move by given amount
+        #Move by given amount
         if not is_blocked(self.x + dx, self.y + dy):
             self.x += dx
             self.y += dy
+
+    def move_toward(self, target_x, target_y):
+        #Vector from this object to the target
+        dx = target_x - self.x
+        dy = target_y - self.y
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+
+        #Normalize it to length 1 (preserving direction) , then round it and
+        #convert it to integer so the movement is restricted to the map grid
+        dx = int(round(dx / distance))
+        dy = int(round(dy / distance))
+        self.move(dx, dy)
+
+    def distance_to(self, other):
+        #Return distance to another object
+        dx = other.x - self.y
+        dy = other.y - self.y
+        return math.sqrt(dx ** 2 + dy ** 2)
 
     def draw(self):
         #Only show if it is in fov
@@ -86,9 +105,17 @@ class Fighter:
 class BasicMonster:
     #AI for basic monster
     def take_turn(self):
-        print 'The ' + self.owner + ' growls!'
+        #A basic monster takes its turn. If you can see it, it can see you
+        monster = self.owner
+        if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
 
-
+            #Move towards the player if far away
+            if monster.distance_to(player):
+                monster.move_toward(player.x, player.y)
+            
+            #Close enough, attack (if player is alive)
+            elif player.fighter.hp > 0:
+                print 'The attack of ' + monster.name + ' bounces off of your shiny metal armor!'
 
 def is_blocked(x, y):
     #First test map tile
@@ -367,5 +394,5 @@ while not libtcod.console_is_window_closed():
     #Let monsters take their turn
     if game_state == 'playing' and player_action != 'didnt-take-turn':
         for object in objects:
-            if object != player:
-                print 'The ' + object.name + ' growls!'
+            if object.ai:
+                object.ai.take_turn()
