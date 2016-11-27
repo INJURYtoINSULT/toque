@@ -75,7 +75,7 @@ class Object:
 
     def distance_to(self, other):
         #Return distance to another object
-        dx = other.x - self.y
+        dx = other.x - self.x
         dy = other.y - self.y
         return math.sqrt(dx ** 2 + dy ** 2)
 
@@ -125,7 +125,7 @@ class BasicMonster:
         if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
 
             #Move towards the player if far away
-            if monster.distance_to(player):
+            if monster.distance_to(player) >= 2:
                 monster.move_toward(player.x, player.y)
             
             #Close enough, attack (if player is alive)
