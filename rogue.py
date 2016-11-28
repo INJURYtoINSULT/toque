@@ -79,6 +79,12 @@ class Object:
         dy = other.y - self.y
         return math.sqrt(dx ** 2 + dy ** 2)
 
+    def send_to_back(self):
+        #Make this object draw first
+        global objects
+        objects.remove(self)
+        objects.insert(0, self)
+
     def draw(self):
         #Only show if it is in fov
         if libtcod.map_is_in_fov(fov_map, self.x, self.y):
@@ -96,12 +102,12 @@ class Object:
 
 class Fighter:
     #Combat-related properties and methods
-    def __init__(self, hp, defense, power):
+    def __init__(self, hp, defense, power, death_function = None):
         self.max_hp = hp
         self.hp = hp
         self.defense = defense
         self.power = power
-        #self.death_function = death_function
+        self.death_function = death_function
 
     def attack(self, target):
         #Simple formula for attack damage
@@ -109,13 +115,20 @@ class Fighter:
 
         if damage > 0:
             print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' Hit points!'
-        else: 
+            target.fighter.take_damage(damage)
+        else:
             print self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no effect!'
 
     def take_damage(self, damage):
         #Apply damage if possible
         if damage > 0:
             self.hp -= damage
+
+            #Check for death
+            if self.hp <= 0:
+                function = self.death_function
+                if function is not None:
+                    function(self.owner)
 
 class BasicMonster:
     #AI for basic monster
@@ -258,14 +271,14 @@ def place_objects(room):
         if not is_blocked(x, y):
             if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
                 #Create an orc
-                fighter_component = Fighter(hp = 10, defense = 0, power = 3)
+                fighter_component = Fighter(hp = 10, defense = 0, power = 3, death_function = monster_death)
                 ai_component = BasicMonster()
                 
                 monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks = True, 
                         fighter = fighter_component, ai = ai_component)
             else:
                 #Create a troll
-                fighter_component = Fighter(hp = 16, defense = 1, power = 4)
+                fighter_component = Fighter(hp = 16, defense = 1, power = 4, death_function = monster_death)
                 ai_component = BasicMonster()
                 
                 monster = Object(x, y, 'T', 'troll', libtcod.darker_green, blocks = True, 
@@ -306,6 +319,7 @@ def render_all():
     #draw all objects in the list
     for object in objects:
         object.draw()
+    player.draw()
 
     #Blit to con
     libtcod.console_blit(con, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0)
@@ -325,7 +339,7 @@ def player_move_or_attack(dx, dy):
     #Try to find an attackable object there
     target = None
     for object in objects:
-        if object.x == x and object.y == y:
+        if object.fighter and object.x == x and object.y == y:
             target = object
             break
 
@@ -364,6 +378,27 @@ def handle_keys():
         else:
             return 'didnt-take-turn'
 
+def player_death(player):
+    #The game ended
+    global game_state
+    print 'You died!'
+    game_state = 'dead'
+    
+    #For added effect, transform the player into a corpse
+    player.char = '%'
+    player.color = libtcod.dark_red
+
+def monster_death(monster):
+    #Transform into corpse, remove blocking, can't be attacked or move
+    print monster.name.capitalize() + ' is dead!'
+    monster.char = '%'
+    monster.color = libtcod.dark_red
+    monster.blocks = False
+    monster.fighter = None
+    monster.ai = None
+    monster.name = 'remains of ' + monster.name
+    monster.send_to_back()
+
 ##################################
 # Initializations
 ##################################
@@ -374,7 +409,7 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 
 #Create objects representing the player
-fighter_component = Fighter(hp = 30, defense = 2, power = 5)
+fighter_component = Fighter(hp = 30, defense = 2, power = 5, death_function = player_death)
 player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
 
 #The list of objects of those two
