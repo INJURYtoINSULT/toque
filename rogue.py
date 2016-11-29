@@ -327,7 +327,7 @@ def render_all():
     #Show the player's current stats
     libtcod.console_set_default_foreground(con, libtcod.white)
     libtcod.console_print_ex(con, 1, SCREEN_HEIGHT - 2, libtcod.BKGND_NONE, libtcod.LEFT,
-            'HP: ' + str(player.fighter.hp) + '/' + str(player.fighter.max_hp))
+            'HP: ' + str(player.fighter.hp) + '/' + str(player.fighter.max_hp) + ' ')
 
 def player_move_or_attack(dx, dy):
     global fov_recompute
