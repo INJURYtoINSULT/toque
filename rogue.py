@@ -29,6 +29,7 @@ ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
 MAX_ROOM_MONSTERS = 3
+MAX_ROOM_ITEMS = 2
 
 FOV_ALGO = 0
 FOV_LIGHT_WALLS = True
@@ -343,6 +344,22 @@ def place_objects(room):
                         fighter = fighter_component, ai = ai_component)
 
             objects.append(monster)
+
+    #Choose random number of items
+    num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
+
+    for i in range(num_items):
+        #Choose random spot for this item
+        x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
+        y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
+
+        #Only place it if the tile is not blocked
+        if not is_blocked(x, y):
+            #Create a healing item
+            item = Object(x, y, '!', 'healing potion', libtcod.violet)
+
+            objects.append(item)
+            item.send_to_back() #Items appear below other items
 
 def render_all():
     global fov_map, color_dark_wall, color_light_wall
