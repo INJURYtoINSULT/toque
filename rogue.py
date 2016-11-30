@@ -53,7 +53,7 @@ class Tile:
 
 class Object:
     #Generic object
-    def __init__(self, x, y, char, name, color, blocks = False, fighter = None, ai = None):
+    def __init__(self, x, y, char, name, color, blocks = False, fighter = None, ai = None, item = None):
         self.x = x
         self.y = y
         self.char = char
@@ -66,6 +66,9 @@ class Object:
         self.ai = ai
         if self.ai:
             self.ai.owner = self
+        self.item = item
+        if self.item:
+            self.item.owner = self
 
     def move(self, dx, dy):
         #Move by given amount
@@ -156,6 +159,17 @@ class BasicMonster:
             #Close enough, attack (if player is alive)
             elif player.fighter.hp > 0:
                 monster.fighter.attack(player)
+
+class Item:
+    #An item that can be picked up and used
+    def pick_up(self):
+        #Add to player's inventory and remove from map
+        if len(inventory) >= 26:
+            message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+        else:
+            inventory.append(self.owner)
+            objects.remove(self.owner)
+            message('You picked up ' + self.owner.name + '!', libtcod.green)
 
 def is_blocked(x, y):
     #First test map tile
@@ -356,7 +370,8 @@ def place_objects(room):
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
             #Create a healing item
-            item = Object(x, y, '!', 'healing potion', libtcod.violet)
+            item_component = Item()
+            item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
 
             objects.append(item)
             item.send_to_back() #Items appear below other items
@@ -467,6 +482,16 @@ def handle_keys():
             player_move_or_attack(1, 0)
         
         else:
+            #Test for other keys
+            key_char = chr(key.c)
+
+            if key_char == 'g':
+                #Pick up item
+                for object in objects:
+                    if object.x == player.x and object.y == player.y and object.item:
+                        object.item.pick_up()
+                        break
+
             return 'didnt-take-turn'
 
 def player_death(player):
@@ -516,12 +541,14 @@ for y in range(MAP_HEIGHT):
     for x in range(MAP_WIDTH):
         libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
 
-#create the list of game messages and their colors, starts empty
-game_msgs = []
-
 fov_recompute = True
 game_state = 'playing'
 player_action = None
+
+inventory = []
+
+#create the list of game messages and their colors, starts empty
+game_msgs = []
 
 #Warm welcoming message!
 message('Welcome stranger!, Prepare to perish in the tombs of ancient kings!', libtcod.red)
