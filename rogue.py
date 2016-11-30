@@ -129,10 +129,10 @@ class Fighter:
         damage = self.power - target.fighter.defense
 
         if damage > 0:
-            print self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' Hit points!'
+            message(self.owner.name.capitalize() + ' attacks ' + target.name + ' for ' + str(damage) + ' Hit points!')
             target.fighter.take_damage(damage)
         else:
-            print self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no effect!'
+            message(self.owner.name.capitalize() + ' attacks ' + target.name + ' but it has no effect!')
 
     def take_damage(self, damage):
         #Apply damage if possible
@@ -497,7 +497,7 @@ def handle_keys():
 def player_death(player):
     #The game ended
     global game_state
-    print 'You died!'
+    message('You died!', libtcod.red)
     game_state = 'dead'
     
     #For added effect, transform the player into a corpse
@@ -506,7 +506,7 @@ def player_death(player):
 
 def monster_death(monster):
     #Transform into corpse, remove blocking, can't be attacked or move
-    print monster.name.capitalize() + ' is dead!'
+    message(monster.name.capitalize() + ' is dead!', libtcod.orange)
     monster.char = '%'
     monster.color = libtcod.dark_red
     monster.blocks = False
