@@ -17,6 +17,7 @@ PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT
 MSG_X = BAR_WIDTH + 2
 MSG_WIDTH = SCREEN_WIDTH - BAR_WIDTH - 2
 MSG_HEIGHT = PANEL_HEIGHT - 1
+INVENTORY_WIDTH = 50
 
 LIMIT_FPS = 20
 
@@ -227,6 +228,45 @@ def create_v_tunnel(y1, y2, x):
 ##################################
 # GUI Elements
 ##################################
+
+def menu(header, options, width):
+    if len(options) > 26: ValueError('Cannot have a menu with more than 26 options.')
+    #Calculate total height of the header (after auto-wrap) and one line per option
+    header_height = libtcod.console_get_height_rect(con, 0, 0, width, SCREEN_HEIGHT, header)
+    height = len(options) + header_height
+
+    #Create an offscreen console that represents the menu's window
+    window = libtcod.console_new(width, height)
+
+    #Print the header with auto-wrap
+    libtcod.console_set_default_foreground(window, libtcod.white)
+    libtcod.console_print_rect_ex(window, 0, 0, width, height, libtcod.BKGND_NONE, libtcod.LEFT, header)
+    #Print all of the options
+    y = header_height
+    letter_index = ord('a')
+    for option_text in options:
+        text = '(' + chr(letter_index) + ') ' + option_text
+        libtcod.console_print_ex(window, 0, y, libtcod.BKGND_NONE, libtcod.LEFT, text)
+        y += 1
+        letter_index += 1
+
+    #Blit the contents of "window" to the root console
+    x = SCREEN_WIDTH/2 - width/2
+    y = SCREEN_HEIGHT/2 - height/2
+    libtcod.console_blit(window, 0, 0, width, height, 0, x, y, 1.0, 0.7)
+
+    #Present the root console to the player and wait for a key-press
+    libtcod.console_flush()
+    key = libtcod.console_wait_for_keypress(True)
+
+def inventory_menu(header):
+    #Show a menu with each new item of the inventory as an option
+    if len(inventory) == 0:
+        options = ['Inventory is empty.']
+    else:
+        options = [item.name for item in inventory]
+
+    index = menu(header, options, INVENTORY_WIDTH)
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
     #Render a bar (HP, XP, ETC), first calculate the width of the bar
@@ -491,6 +531,10 @@ def handle_keys():
                     if object.x == player.x and object.y == player.y and object.item:
                         object.item.pick_up()
                         break
+
+            if key_char == 'i':
+                #Show the inventory
+                inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
 
             return 'didnt-take-turn'
 
