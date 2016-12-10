@@ -19,6 +19,9 @@ MSG_WIDTH = SCREEN_WIDTH - BAR_WIDTH - 2
 MSG_HEIGHT = PANEL_HEIGHT - 1
 INVENTORY_WIDTH = 50
 
+#Spell values
+HEAL_AMOUNT = 4
+
 LIMIT_FPS = 20
 
 color_dark_wall = libtcod.Color(0, 0, 100)
@@ -146,6 +149,12 @@ class Fighter:
                 if function is not None:
                     function(self.owner)
 
+    def heal(self, amount):
+        #Heal by the given amount without going over
+        self.hp += amount
+        if self.hp > self.max_hp:
+            self.hp = self.max_hp
+
 class BasicMonster:
     #AI for basic monster
     def take_turn(self):
@@ -163,6 +172,10 @@ class BasicMonster:
 
 class Item:
     #An item that can be picked up and used
+    def __init__(self, use_function=None):
+        self.use_function = use_function
+
+    #An item that can be picked up and used
     def pick_up(self):
         #Add to player's inventory and remove from map
         if len(inventory) >= 26:
@@ -171,6 +184,13 @@ class Item:
             inventory.append(self.owner)
             objects.remove(self.owner)
             message('You picked up ' + self.owner.name + '!', libtcod.green)
+    def use(self):
+        #Just call the "use function" if it is defined
+        if self.use_function is None:
+            message('The ', self.owner.name + ' cannot be used.')
+        else:
+            if self.use_function() != 'cancelled':
+                inventory.remove(self.owner) #Destroy after use
 
 def is_blocked(x, y):
     #First test map tile
@@ -259,6 +279,11 @@ def menu(header, options, width):
     libtcod.console_flush()
     key = libtcod.console_wait_for_keypress(True)
 
+    #Convert the ASCII code to an index; if it corresponds to an option, return it
+    index = key.c - ord('a')
+    if index >= 0 and index < len(options): return index
+    return None
+
 def inventory_menu(header):
     #Show a menu with each new item of the inventory as an option
     if len(inventory) == 0:
@@ -267,6 +292,10 @@ def inventory_menu(header):
         options = [item.name for item in inventory]
 
     index = menu(header, options, INVENTORY_WIDTH)
+
+    #If an item was chosen, return it
+    if index is None or len(inventory) == 0: return None
+    return inventory[index].item
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
     #Render a bar (HP, XP, ETC), first calculate the width of the bar
@@ -410,7 +439,7 @@ def place_objects(room):
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
             #Create a healing item
-            item_component = Item()
+            item_component = Item(use_function = cast_heal)
             item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
 
             objects.append(item)
@@ -533,8 +562,10 @@ def handle_keys():
                         break
 
             if key_char == 'i':
-                #Show the inventory
-                inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
+                #Show the inventory; if an item is selected use it
+                chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
+                if chosen_item is not None:
+                    chosen_item.use()
 
             return 'didnt-take-turn'
 
@@ -558,6 +589,15 @@ def monster_death(monster):
     monster.ai = None
     monster.name = 'remains of ' + monster.name
     monster.send_to_back()
+
+def cast_heal():
+    #Heal the player
+    if player.fighter.hp == player.fighter.max_hp:
+        message('You are already at full health.', libtcod.red)
+        return 'cancelled'
+    
+    message('Your wounds start to feel better', libtcod.light_violet)
+    player.fighter.heal(HEAL_AMOUNT)
 
 ##################################
 # Initializations
