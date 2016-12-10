@@ -21,6 +21,8 @@ INVENTORY_WIDTH = 50
 
 #Spell values
 HEAL_AMOUNT = 4
+LIGHTNING_DAMAGE = 20
+LIGHTNING_RANGE = 5
 
 LIMIT_FPS = 20
 
@@ -438,10 +440,19 @@ def place_objects(room):
 
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
-            #Create a healing item
-            item_component = Item(use_function = cast_heal)
-            item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
+            dice = libtcod.random_get_int(0, 0, 100)
+            if dice < 70:
+                #Create a healing potion(70% chance)
+                item_component = Item(use_function = cast_heal)
+                
+                item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
 
+            else:
+                #Create a lightning bolt scroll (30% chance)
+                item_component = Item(use_function = cast_lightning)
+
+                item = Object(x, y, '#', 'scroll of lightning bolt', libtcod.light_yellow, item=item_component)
+    
             objects.append(item)
             item.send_to_back() #Items appear below other items
 
@@ -590,6 +601,20 @@ def monster_death(monster):
     monster.name = 'remains of ' + monster.name
     monster.send_to_back()
 
+def closest_monster(max_range):
+    #Find the closest enemy, up to a maximum range, and in the players fov
+    closest_enemy = None
+    closest_dist = max_range + 1 #Start with slightly more than max range
+
+    for object in objects:
+        if object.fighter and not object == player and libtcod.map_is_in_fov(fov_map, object.x, object.y):
+            #Calculate the distance between this object and the player
+            dist = player.distance_to(object)
+            if dist < closest_dist: #It's closer, so remember it
+                closest_enemy = object
+                closest_dist = dist
+    return closest_enemy
+
 def cast_heal():
     #Heal the player
     if player.fighter.hp == player.fighter.max_hp:
@@ -598,6 +623,17 @@ def cast_heal():
     
     message('Your wounds start to feel better', libtcod.light_violet)
     player.fighter.heal(HEAL_AMOUNT)
+
+def cast_lightning():
+    #Find the closest enemy (inside a maximum range) and damage it
+    monster = closest_monster(LIGHTNING_RANGE)
+    if monster is None: #No enemy within maximum range
+        message('No enemy is close enough to strike.', libtcod.red)
+        return 'cancelled'
+
+    #Zap it
+    message('A lightning bolt strikes the ' + monster.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
+    monster.fighter.take_damage(LIGHTNING_DAMAGE)
 
 ##################################
 # Initializations
