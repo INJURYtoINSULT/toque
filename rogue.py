@@ -656,6 +656,17 @@ def target_tile(max_range=None):
                 (max_range is None or player.distance(x, y) <= max_range)):
             return(x, y)
 
+def target_monster(max_range=None):
+    #Returns a clicked monster inside FOV up to a range, or None if right-clicked
+    while True:
+        (x, y) = target_tile(max_range)
+        if x is None: #Player cancelled
+            return None
+
+        #Returns the first clicked monster, otherwise continue looping
+        for obj in objects:
+            if obj.x == x and obj.y == y and obj.fighter and obj != player:
+                return obj
 
 def closest_monster(max_range):
     #Find the closest enemy, up to a maximum range, and in the players fov
@@ -704,11 +715,10 @@ def cast_fireball():
             obj.fighter.take_damage(FIREBALL_DAMAGE)
 
 def cast_confuse():
-    #Find closest enemy in range and confuse it
-    monster = closest_monster(CONFUSE_RANGE)
-    if monster is None: #No enemy within confuse range
-        message('No enemy is close enough to confuse.', libtcod.red)
-        return 'cancelled'
+    #Ask the player for a target to confuse
+    message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
+    monster = target_monster(CONFUSE_RANGE)
+    if monster is None: return 'cancelled'
 
     #Replace the monster's AI with a "confused" one; after some turns it will restore the old AI
     old_ai = monster.ai
