@@ -23,6 +23,8 @@ INVENTORY_WIDTH = 50
 HEAL_AMOUNT = 4
 LIGHTNING_DAMAGE = 20
 LIGHTNING_RANGE = 5
+CONFUSE_NUM_TURNS = 10
+CONFUSE_RANGE = 8
 
 LIMIT_FPS = 20
 
@@ -171,6 +173,23 @@ class BasicMonster:
             #Close enough, attack (if player is alive)
             elif player.fighter.hp > 0:
                 monster.fighter.attack(player)
+
+class ConfusedMonster:
+    #AI for temporarily confused monster (Reverts to previous ai after a while)
+    def __init__(self, old_ai, num_turns = CONFUSE_NUM_TURNS):
+        self.old_ai = old_ai
+        self.num_turns = num_turns
+
+    def take_turn(self):
+        if self.num_turns > 0: #Still confused...
+            #Move in a random direction, and decrease the number of turns confused
+            self.owner.move(libtcod.random_get_int(0, -1, 1), libtcod.random_get_int(0, -1, 1))
+            self.num_turns -= 1
+
+        else: #Restore the previous ai (this one will be deleted because it's not anymore)
+            self.owner.ai = self.old_ai
+            message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)
+
 
 class Item:
     #An item that can be picked up and used
@@ -446,13 +465,19 @@ def place_objects(room):
                 item_component = Item(use_function = cast_heal)
                 
                 item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
-
-            else:
-                #Create a lightning bolt scroll (30% chance)
+            
+            elif dice < 70 + 15:
+                #Create a lightning bolt scroll (15% chance)
                 item_component = Item(use_function = cast_lightning)
 
                 item = Object(x, y, '#', 'scroll of lightning bolt', libtcod.light_yellow, item=item_component)
-    
+            
+            else: 
+                #Create a confuse scroll (15% chance)
+                item_component = Item(use_function = cast_confuse)
+
+                item = Object(x, y, '#', 'scroll of confusion', libtcod.light_yellow, item=item_component)
+
             objects.append(item)
             item.send_to_back() #Items appear below other items
 
@@ -634,6 +659,19 @@ def cast_lightning():
     #Zap it
     message('A lightning bolt strikes the ' + monster.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
     monster.fighter.take_damage(LIGHTNING_DAMAGE)
+
+def cast_confuse():
+    #Find closest enemy in range and confuse it
+    monster = closest_monster(CONFUSE_RANGE)
+    if monster is None: #No enemy within confuse range
+        message('No enemy is close enough to confuse.', libtcod.red)
+        return 'cancelled'
+
+    #Replace the monster's AI with a "confused" one; after some turns it will restore the old AI
+    old_ai = monster.ai
+    monster.ai = ConfusedMonster(old_ai)
+    monster.ai.owner = monster #Tell the component who owns it
+    message('The eyes of the ' + monster.name + ' look vacant and it begins to stumble around.', libtcod.green)
 
 ##################################
 # Initializations
