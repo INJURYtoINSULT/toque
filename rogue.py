@@ -383,7 +383,10 @@ def get_names_under_mouse():
 ##################################
 
 def make_map():
-    global map
+    global map, objects
+
+    #The list of objects with just the player
+    objects = [player]
 
     #Fill map with "blocked" tiles
     map = [[ Tile(True)
@@ -747,65 +750,73 @@ def cast_confuse():
 # Initializations
 ##################################
 
+def new_game():
+    global player, inventory, game_msgs, game_state
+
+    #Create object representing player
+    fighter_component = Fighter(hp = 30, defense = 2, power = 5, death_function = player_death)
+    player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
+
+    #Generate Map
+    make_map()
+    initialize_fov()
+
+    game_state = 'playing'
+    inventory = []
+
+    #create the list of game messages and their colors, starts empty
+    game_msgs = []
+
+    #Warm welcoming message!
+    message('Welcome stranger!, Prepare to perish in the tombs of ancient kings!', libtcod.red)
+
+def initialize_fov():
+    global fov_recompute, fov_map
+    fov_recompute = True
+
+    #Create the FOV map, according to the generated map
+    fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
+    for y in range(MAP_HEIGHT):
+        for x in range(MAP_WIDTH):
+            libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
+
+def play_game():
+    global key, mouse
+
+    player_action = None
+
+    mouse = libtcod.Mouse()
+    key = libtcod.Key()
+    while not libtcod.console_is_window_closed():
+        
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
+        render_all()
+
+        libtcod.console_flush()
+
+        for object in objects:
+            object.clear()
+
+        #Player turn
+        player_action = handle_keys()
+        if player_action == 'exit':
+            break
+
+        #Let monsters take their turn
+        if game_state == 'playing' and player_action != 'didnt-take-turn':
+            for object in objects:
+                if object.ai:
+                    object.ai.take_turn()
+
+##################################
+# Main Loop
+##################################
+
 libtcod.console_set_custom_font('arial10x10.png', libtcod.FONT_TYPE_GREYSCALE | libtcod.FONT_LAYOUT_TCOD)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, 'Rogue', False)
 libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
-#Create objects representing the player
-fighter_component = Fighter(hp = 30, defense = 2, power = 5, death_function = player_death)
-player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
-
-#The list of objects of those two
-objects = [player]
-
-#Generate Map
-make_map()
-
-#Create FOV Map
-fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
-for y in range(MAP_HEIGHT):
-    for x in range(MAP_WIDTH):
-        libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
-
-fov_recompute = True
-game_state = 'playing'
-player_action = None
-
-inventory = []
-
-#create the list of game messages and their colors, starts empty
-game_msgs = []
-
-#Warm welcoming message!
-message('Welcome stranger!, Prepare to perish in the tombs of ancient kings!', libtcod.red)
-
-mouse = libtcod.Mouse()
-key = libtcod.Key()
-
-##################################
-# Main Loop
-##################################
-
-while not libtcod.console_is_window_closed():
-    
-    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
-
-    render_all()
-
-    libtcod.console_flush()
-
-    for object in objects:
-        object.clear()
-
-    #Player turn
-    player_action = handle_keys()
-    if player_action == 'exit':
-        break
-
-    #Let monsters take their turn
-    if game_state == 'playing' and player_action != 'didnt-take-turn':
-        for object in objects:
-            if object.ai:
-                object.ai.take_turn()
+new_game()
+play_game()
