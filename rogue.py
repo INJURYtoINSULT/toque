@@ -293,6 +293,9 @@ def menu(header, options, width):
     header_height = libtcod.console_get_height_rect(con, 0, 0, width, SCREEN_HEIGHT, header)
     height = len(options) + header_height
 
+    if header == '':
+        header_height = 0
+
     #Create an offscreen console that represents the menu's window
     window = libtcod.console_new(width, height)
 
@@ -317,6 +320,9 @@ def menu(header, options, width):
     libtcod.console_flush()
     key = libtcod.console_wait_for_keypress(True)
 
+    if key.vk == libtcod.KEY_ENTER and key.lalt: #Alt+Enter: toggle fullscreen
+        libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
+    
     #Convert the ASCII code to an index; if it corresponds to an option, return it
     index = key.c - ord('a')
     if index >= 0 and index < len(options): return index
@@ -779,6 +785,8 @@ def initialize_fov():
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
+    
+    libtcod.console_clear(con) #Unexplored areas start as black
 
 def play_game():
     global key, mouse
@@ -808,6 +816,22 @@ def play_game():
                 if object.ai:
                     object.ai.take_turn()
 
+def main_menu():
+    while not libtcod.console_is_window_closed():
+        #Show the games title and some credits
+        libtcod.console_set_default_foreground(0, libtcod.light_yellow)
+        libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 4, libtcod.BKGND_NONE, libtcod.CENTER, 'Toque')
+        libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT - 2, libtcod.BKGND_NONE, libtcod.CENTER,'By Lenix')
+        
+        #Show the options and wait for the player's choice
+        choice = menu('', ['New Game', 'Load', 'Quit'], 24)
+
+        if choice == 0:
+            new_game()
+            play_game()
+        elif choice == 2:
+            break
+
 ##################################
 # Main Loop
 ##################################
@@ -818,5 +842,4 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT)
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
-new_game()
-play_game()
+main_menu()
