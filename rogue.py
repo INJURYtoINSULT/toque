@@ -1,6 +1,7 @@
 import libtcodpy as libtcod
 import math
 import textwrap
+import shelve
 
 #Actual size of window
 SCREEN_WIDTH = 80
@@ -340,6 +341,9 @@ def inventory_menu(header):
     #If an item was chosen, return it
     if index is None or len(inventory) == 0: return None
     return inventory[index].item
+
+def msgbox(text, width=50):
+    menu(text, [], width) #Use menu() as a sort of message box
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color):
     #Render a bar (HP, XP, ETC), first calculate the width of the bar
@@ -808,6 +812,7 @@ def play_game():
         #Player turn
         player_action = handle_keys()
         if player_action == 'exit':
+            save_game()
             break
 
         #Let monsters take their turn
@@ -815,6 +820,32 @@ def play_game():
             for object in objects:
                 if object.ai:
                     object.ai.take_turn()
+
+def save_game():
+    #Open a new empty shelve (possibly overwriting an old one) to write the game data
+    file = shelve.open('savegame', 'n')
+    file['map'] = map
+    file['objects'] = objects
+    file['player_index'] = objects.index(player) #Index of player in object list
+    file['inventory'] = inventory
+    file['game_msgs'] = game_msgs
+    file['game_state'] = game_state
+    file.close()
+
+def load_game():
+    #Open previously saved shelve and load game data
+    global map, objects, player, inventory, game_msgs, game_state
+
+    file = shelve.open('savegame', 'r')
+    map = file['map']
+    objects = file['objects']
+    player = objects[file['player_index']] #Get index of player in objects list and access it
+    inventory = file['inventory']
+    game_msgs = file['game_msgs']
+    game_state = file['game_state']
+    file.close()
+
+    initialize_fov()
 
 def main_menu():
     while not libtcod.console_is_window_closed():
@@ -828,6 +859,13 @@ def main_menu():
 
         if choice == 0:
             new_game()
+            play_game()
+        elif choice == 1:
+            try:
+                load_game()
+            except:
+                msgbox('\n\n\n\nNo saved game to load. \n', 24)
+                continue
             play_game()
         elif choice == 2:
             break
