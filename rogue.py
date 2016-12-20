@@ -742,6 +742,7 @@ def target_tile(max_range=None):
         (x, y) = (mouse.cx, mouse.cy)
 
         if mouse.rbutton_pressed or key.vk == libtcod.KEY_ESCAPE:
+            message('Attack canceled')
             return (None, None) #Cancel if the player right clicked or pressed escape
         #Accept the target if the player clicked in FOV
         if (mouse.lbutton_pressed and libtcod.map_is_in_fov(fov_map, x, y) and
