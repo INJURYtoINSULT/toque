@@ -64,13 +64,14 @@ class Tile:
 
 class Object:
     #Generic object
-    def __init__(self, x, y, char, name, color, blocks = False, fighter = None, ai = None, item = None):
+    def __init__(self, x, y, char, name, color, blocks = False, always_visible = False, fighter = None, ai = None, item = None):
         self.x = x
         self.y = y
         self.char = char
         self.name = name
         self.color = color
         self.blocks = blocks
+        self.always_visible = always_visible
         self.fighter = fighter
         if self.fighter:
             self.fighter.owner = self
@@ -117,7 +118,8 @@ class Object:
 
     def draw(self):
         #Only show if it is in fov
-        if libtcod.map_is_in_fov(fov_map, self.x, self.y):
+        if (libtcod.map_is_in_fov(fov_map, self.x, self.y) or
+                (self.always_visible and map[self.x][self.y].explored)):
             #set color, draw character
             libtcod.console_set_default_foreground(con, self.color)
             libtcod.console_put_char(con, self.x, self.y, self.char, libtcod.BKGND_NONE)
@@ -393,7 +395,7 @@ def get_names_under_mouse():
 ##################################
 
 def make_map():
-    global map, objects
+    global map, objects, stairs
 
     #The list of objects with just the player
     objects = [player]
@@ -451,6 +453,11 @@ def make_map():
 
             rooms.append(new_room)
             num_rooms += 1
+
+    #Create stairs at the center of the last room
+    stairs = Object(new_x, new_y, '<', 'stairs', libtcod.white, always_visible = True)
+    objects.append(stairs)
+    stairs.send_to_back() #So it is drawn below the monsters
 
 def place_objects(room):
     #Choose random number of monsters
@@ -570,6 +577,9 @@ def render_all():
     render_bar(1, 1, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp,
             libtcod.light_red, libtcod.darker_red)
     
+    #Print dungeon level
+    libtcod.console_print_ex(panel, 1, 3, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon Level: ' + str(dungeon_level))
+
     #Display names of objects under the mouse
     libtcod.console_set_default_foreground(panel, libtcod.light_gray)
     libtcod.console_print_ex(panel, 1, 0, libtcod.BKGND_NONE, libtcod.LEFT, get_names_under_mouse())
@@ -644,6 +654,11 @@ def handle_keys():
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.drop()
+            
+            if key_char == 'e':
+                #Go down stairs if player is standing on them
+                if stairs.x == player.x and stairs.y == player.y:
+                    next_level()
 
             return 'didnt-take-turn'
 
@@ -757,17 +772,18 @@ def cast_confuse():
     message('The eyes of the ' + monster.name + ' look vacant and it begins to stumble around.', libtcod.green)
 
 ##################################
-# Initializations
+# Game functions
 ##################################
 
 def new_game():
-    global player, inventory, game_msgs, game_state
+    global player, inventory, game_msgs, game_state, dungeon_level
 
     #Create object representing player
     fighter_component = Fighter(hp = 30, defense = 2, power = 5, death_function = player_death)
     player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
 
     #Generate Map
+    dungeon_level = 1
     make_map()
     initialize_fov()
 
@@ -791,6 +807,18 @@ def initialize_fov():
             libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
     
     libtcod.console_clear(con) #Unexplored areas start as black
+
+def next_level():
+    #Advance to next level
+    global dungeon_level
+    message('You take a moment to rest and recover your strength.', libtcod.light_violet)
+    player.fighter.heal(player.fighter.max_hp/2) #Heal the player by half of their max health
+
+    message('You delve deeper into the dungeon.', libtcod.red)
+    make_map() #Create a fresh new level
+    initialize_fov()
+
+    dungeon_level += 1
 
 def play_game():
     global key, mouse
@@ -830,11 +858,13 @@ def save_game():
     file['inventory'] = inventory
     file['game_msgs'] = game_msgs
     file['game_state'] = game_state
+    file['stairs_index'] = objects.index(stairs) #Index of stairs in object list
+    file['dungeon_level'] = dungeon_level
     file.close()
 
 def load_game():
     #Open previously saved shelve and load game data
-    global map, objects, player, inventory, game_msgs, game_state
+    global map, objects, player, inventory, game_msgs, game_state, stairs, dungeon_level
 
     file = shelve.open('savegame', 'r')
     map = file['map']
@@ -843,6 +873,8 @@ def load_game():
     inventory = file['inventory']
     game_msgs = file['game_msgs']
     game_state = file['game_state']
+    stairs = objects[file['stairs_index']] #Get index of stairs in objects list and access it
+    dungeon_level = file['dungeon_level']
     file.close()
 
     initialize_fov()
