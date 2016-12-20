@@ -469,9 +469,34 @@ def make_map():
     objects.append(stairs)
     stairs.send_to_back() #So it is drawn below the monsters
 
+def random_choice_index(chances): #Choose one option from list of chances, returning its index
+    #The dice will land on some number between 1 and the sum of the chances
+    dice = libtcod.random_get_int(0, 1, sum(chances))
+
+    #Go throw all chances keeping, the sum so far
+    running_sum = 0
+    choice = 0
+    for w in chances:
+        running_sum += w
+
+        #See if the dice landed in the part that corresponds to this choice
+        if dice <= running_sum:
+            return choice
+        choice += 1
+
+def random_choice(chances_dict):
+    #Choose one option from the dictionary, returning its keys
+    chances = chances_dict.values()
+    strings = chances_dict.keys()
+
+    return strings[random_choice_index(chances)]
+
 def place_objects(room):
     #Choose random number of monsters
     num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
+
+    monster_chances = {'orc': 80, 'troll': 20}
+    item_chances = {'heal': 70, 'lightning': 10, 'fireball': 10, 'confuse': 10}
 
     for i in range(num_monsters):
         #Random position in room
@@ -479,14 +504,15 @@ def place_objects(room):
         y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
 
         if not is_blocked(x, y):
-            if libtcod.random_get_int(0, 0, 100) < 80: #80% chance of rolling orc
+            choice = random_choice(monster_chances)
+            if choice == 'orc':
                 #Create an orc
                 fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = monster_death)
                 ai_component = BasicMonster()
                 
                 monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks = True, 
                         fighter = fighter_component, ai = ai_component)
-            else:
+            elif choice == 'troll':
                 #Create a troll
                 fighter_component = Fighter(hp = 16, defense = 1, power = 4, xp = 100, death_function = monster_death)
                 ai_component = BasicMonster()
@@ -506,26 +532,27 @@ def place_objects(room):
 
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
-            dice = libtcod.random_get_int(0, 0, 100)
-            if dice < 70:
+            choice = random_choice(item_chances)
+            #dice = libtcod.random_get_int(0, 0, 100)
+            if choice == 'heal':
                 #Create a healing potion(70% chance)
                 item_component = Item(use_function = cast_heal)
                 
                 item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
             
-            elif dice < 70 + 10:
+            elif choice == 'lightning':
                 #Create a lightning bolt scroll (10% chance)
                 item_component = Item(use_function = cast_fireball)
 
                 item = Object(x, y, '#', 'scroll of fireball', libtcod.light_yellow, item=item_component)
             
-            elif dice < 70 + 10 + 10:
+            elif choice == 'fireball':
                 #Create a fireball scroll (10% chance)
                 item_component = Item(use_function = cast_lightning)
 
                 item = Object(x, y, '#', 'scroll of lightning bolt', libtcod.light_yellow, item=item_component)
             
-            else: 
+            elif choice == 'confuse':
                 #Create a confuse scroll (10% chance)
                 item_component = Item(use_function = cast_confuse)
 
@@ -726,9 +753,9 @@ def check_level_up():
                 player.fighter.max_hp += 20
                 player.fighter.hp += 20
             elif choice == 1:
-                player.figher.power += 1
+                player.fighter.power += 1
             elif choice == 2:
-                player.figher.defense += 1
+                player.fighter.defense += 1
 
 def target_tile(max_range=None):
     #Return of a tile left-clicked in player's FOV (optionally in range), or (None, None) if right-clicked
