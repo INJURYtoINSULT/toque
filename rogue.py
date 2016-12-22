@@ -491,12 +491,34 @@ def random_choice(chances_dict):
 
     return strings[random_choice_index(chances)]
 
+def from_dungeon_level(table):
+    #Returns a value that depends on level, the table specifies what value occurs after each level, default is 0
+    for (value, level) in reversed(table):
+        if dungeon_level >= level:
+            return value
+    return 0
+
 def place_objects(room):
     #Choose random number of monsters
     num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
 
-    monster_chances = {'orc': 80, 'troll': 20}
-    item_chances = {'heal': 70, 'lightning': 10, 'fireball': 10, 'confuse': 10}
+    #Maximum number of monsters per room
+    max_monsters = from_dungeon_level([[2, 1], [3, 4], [5, 6]])
+
+    #Chance of each monster
+    monster_chances = {}
+    monster_chances['orc'] = 80 #Orc always shows up even if all other monsters have 0 chance
+    monster_chances['troll'] = from_dungeon_level([[15, 3], [30, 5], [60, 7]])
+
+    #Maximum number of items per room
+    max_items = from_dungeon_level([[1, 1], [2, 4]])
+
+    #Chance of each item (by default they have a chance of 0 at level 1, which then goes up)
+    item_chances = {}
+    item_chances['heal'] = 35 #Healing potion always shows up, even if all other items have 0 chance
+    item_chances['lightning'] = from_dungeon_level([[25, 4]])
+    item_chances['fireball'] = from_dungeon_level([[25, 6]])
+    item_chances['confuse'] = from_dungeon_level([[10, 2]])
 
     for i in range(num_monsters):
         #Random position in room
@@ -533,7 +555,6 @@ def place_objects(room):
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
             choice = random_choice(item_chances)
-            #dice = libtcod.random_get_int(0, 0, 100)
             if choice == 'heal':
                 #Create a healing potion(70% chance)
                 item_component = Item(use_function = cast_heal)
