@@ -1,6 +1,6 @@
 #
-# libtcod 1.5.1 python wrapper
-# Copyright (c) 2008,2009,2010 Jice & Mingos
+# libtcod 1.6.0 Python wrapper
+# Copyright (c) 2008,2009,2010,2012,2013 Jice & Mingos
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,6 +25,7 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+import os
 import sys
 import ctypes
 import struct
@@ -43,22 +44,56 @@ LINUX=False
 MAC=False
 MINGW=False
 MSVC=False
+
+def _get_cdll(libname):
+    '''
+        get the library libname using a manual search path that will first
+        check the package directory and then the development path
+
+        returns the ctypes lib object
+    '''
+    pathsToTry = []
+    # 1. Try the directory this script is located in.
+    pathsToTry.append(os.path.join(__path__[0], libname))
+    # 2. Try the directory of the command-line script.
+    scriptFilePath = sys.argv[0]
+    scriptPath = os.path.dirname(scriptFilePath)
+    if len(scriptPath):
+        pathsToTry.append(os.path.join(scriptPath, libname))
+    else:
+        pathsToTry.append(os.path.join(os.getcwd(), libname))
+    # 3. Try the top-level path in the development tree.
+    potentialTopLevelPath = os.path.realpath(os.path.join(__path__[0], os.pardir, os.pardir))
+    pythonPath = os.path.join(potentialTopLevelPath, "python")
+    if os.path.exists(pythonPath):
+        pathsToTry.append(potentialTopLevelPath)
+
+    for libPath in pathsToTry:
+        if os.path.exists(libPath):
+            try:
+                # get library from the package
+                return ctypes.cdll[libPath]
+            except:
+                pass
+    raise Exception("unable to locate "+ libname)
+
 if sys.platform.find('linux') != -1:
-    _lib = ctypes.cdll['./libtcod.so']
+    _lib = _get_cdll('libtcod.so')
     LINUX=True
 elif sys.platform.find('darwin') != -1:
-    _lib = ctypes.cdll['./libtcod.dylib']
+    _lib = _get_cdll('libtcod.dylib')
     MAC = True
 elif sys.platform.find('haiku') != -1:
-    _lib = ctypes.cdll['./libtcod.so']
+    _lib = _get_cdll('libtcod.so')
     HAIKU = True
 else:
+    _get_cdll('SDL2.dll')
     try:
-        _lib = ctypes.cdll['./libtcod-mingw.dll']
-        MINGW=True
-    except WindowsError:
-        _lib = ctypes.cdll['./libtcod-VS.dll']
+        _lib = _get_cdll('libtcod.dll')
         MSVC=True
+    except WindowsError:
+        _lib = _get_cdll('libtcod-mingw.dll')
+        MINGW=True
     # On Windows, ctypes doesn't work well with function returning structs,
     # so we have to user the _wrapper functions instead
     _lib.TCOD_color_multiply = _lib.TCOD_color_multiply_wrapper
@@ -75,9 +110,9 @@ else:
     _lib.TCOD_image_get_mipmap_pixel = _lib.TCOD_image_get_mipmap_pixel_wrapper
     _lib.TCOD_parser_get_color_property = _lib.TCOD_parser_get_color_property_wrapper
 
-HEXVERSION = 0x010501
-STRVERSION = "1.5.1"
-TECHVERSION = 0x01050103
+HEXVERSION = 0x010600
+STRVERSION = "1.6.0"
+TECHVERSION = 0x01060000
 
 ############################
 # color module
@@ -125,7 +160,7 @@ class Color(Structure):
 
 # Should be valid on any platform, check it!  Has to be done after Color is defined.
 if MAC:
-    from cprotos import setup_protos
+    from .cprotos import setup_protos
     setup_protos(_lib)
 
 _lib.TCOD_color_equals.restype = c_bool
@@ -387,12 +422,15 @@ def color_gen_map(colors, indexes):
 class Key(Structure):
     _fields_=[('vk', c_int),
               ('c', c_uint8),
+              ('text',c_char * 32),
               ('pressed', c_bool),
               ('lalt', c_bool),
               ('lctrl', c_bool),
+              ('lmeta', c_bool),
               ('ralt', c_bool),
               ('rctrl', c_bool),
-              ('shift', c_bool),
+              ('rmeta', c_bool),
+              ('shift', c_bool)
               ]
 
 class ConsoleBuffer:
@@ -417,7 +455,7 @@ class ConsoleBuffer:
         self.fore_g = [fore_g] * n
         self.fore_b = [fore_b] * n
         self.char = [ord(char)] * n
-    
+
     def copy(self):
         # returns a copy of this ConsoleBuffer.
         other = ConsoleBuffer(0, 0)
@@ -431,7 +469,7 @@ class ConsoleBuffer:
         other.fore_b = list(self.fore_b)
         other.char = list(self.char)
         return other
-    
+
     def set_fore(self, x, y, r, g, b, char):
         # set the character and foreground color of one cell.
         i = self.width * y + x
@@ -439,14 +477,14 @@ class ConsoleBuffer:
         self.fore_g[i] = g
         self.fore_b[i] = b
         self.char[i] = ord(char)
-    
+
     def set_back(self, x, y, r, g, b):
         # set the background color of one cell.
         i = self.width * y + x
         self.back_r[i] = r
         self.back_g[i] = g
         self.back_b[i] = b
-    
+
     def set(self, x, y, back_r, back_g, back_b, fore_r, fore_g, fore_b, char):
         # set the background color, foreground color and character of one cell.
         i = self.width * y + x
@@ -457,7 +495,7 @@ class ConsoleBuffer:
         self.fore_g[i] = fore_g
         self.fore_b[i] = fore_b
         self.char[i] = ord(char)
-    
+
     def blit(self, dest, fill_fore=True, fill_back=True):
         # use libtcod's "fill" functions to write the buffer to a console.
         if (console_get_width(dest) != self.width or
@@ -476,6 +514,8 @@ class ConsoleBuffer:
 _lib.TCOD_console_credits_render.restype = c_bool
 _lib.TCOD_console_is_fullscreen.restype = c_bool
 _lib.TCOD_console_is_window_closed.restype = c_bool
+_lib.TCOD_console_has_mouse_focus.restype = c_bool
+_lib.TCOD_console_is_active.restype = c_bool
 _lib.TCOD_console_get_default_background.restype = Color
 _lib.TCOD_console_get_default_foreground.restype = Color
 _lib.TCOD_console_get_char_background.restype = Color
@@ -713,7 +753,7 @@ def console_map_ascii_code_to_font(asciiCode, fontCharX, fontCharY):
 
 def console_map_ascii_codes_to_font(firstAsciiCode, nbCodes, fontCharX,
                                     fontCharY):
-    if type(firstAsciiCode) == str or type(asciiCode) == bytes:
+    if type(firstAsciiCode) == str or type(firstAsciiCode) == bytes:
         _lib.TCOD_console_map_ascii_codes_to_font(ord(firstAsciiCode), nbCodes,
                                                   fontCharX, fontCharY)
     else:
@@ -734,6 +774,12 @@ def console_set_fullscreen(fullscreen):
 
 def console_is_window_closed():
     return _lib.TCOD_console_is_window_closed()
+
+def console_has_mouse_focus():
+    return _lib.TCOD_console_has_mouse_focus()
+
+def console_is_active():
+    return _lib.TCOD_console_is_active()
 
 def console_set_window_title(title):
     _lib.TCOD_console_set_window_title(c_char_p(title))
@@ -914,9 +960,9 @@ def console_fill_foreground(con,r,g,b) :
     if (numpy_available and isinstance(r, numpy.ndarray) and
         isinstance(g, numpy.ndarray) and isinstance(b, numpy.ndarray)):
         #numpy arrays, use numpy's ctypes functions
-        r = numpy.ascontiguousarray(r, dtype=numpy.int_)
-        g = numpy.ascontiguousarray(g, dtype=numpy.int_)
-        b = numpy.ascontiguousarray(b, dtype=numpy.int_)
+        r = numpy.ascontiguousarray(r, dtype=numpy.int32)
+        g = numpy.ascontiguousarray(g, dtype=numpy.int32)
+        b = numpy.ascontiguousarray(b, dtype=numpy.int32)
         cr = r.ctypes.data_as(POINTER(c_int))
         cg = g.ctypes.data_as(POINTER(c_int))
         cb = b.ctypes.data_as(POINTER(c_int))
@@ -935,9 +981,9 @@ def console_fill_background(con,r,g,b) :
     if (numpy_available and isinstance(r, numpy.ndarray) and
         isinstance(g, numpy.ndarray) and isinstance(b, numpy.ndarray)):
         #numpy arrays, use numpy's ctypes functions
-        r = numpy.ascontiguousarray(r, dtype=numpy.int_)
-        g = numpy.ascontiguousarray(g, dtype=numpy.int_)
-        b = numpy.ascontiguousarray(b, dtype=numpy.int_)
+        r = numpy.ascontiguousarray(r, dtype=numpy.int32)
+        g = numpy.ascontiguousarray(g, dtype=numpy.int32)
+        b = numpy.ascontiguousarray(b, dtype=numpy.int32)
         cr = r.ctypes.data_as(POINTER(c_int))
         cg = g.ctypes.data_as(POINTER(c_int))
         cb = b.ctypes.data_as(POINTER(c_int))
@@ -952,14 +998,14 @@ def console_fill_background(con,r,g,b) :
 def console_fill_char(con,arr) :
     if (numpy_available and isinstance(arr, numpy.ndarray) ):
         #numpy arrays, use numpy's ctypes functions
-        arr = numpy.ascontiguousarray(arr, dtype=numpy.int_)
+        arr = numpy.ascontiguousarray(arr, dtype=numpy.int32)
         carr = arr.ctypes.data_as(POINTER(c_int))
     else:
         #otherwise convert using the struct module
         carr = struct.pack('%di' % len(arr), *arr)
 
     _lib.TCOD_console_fill_char(con, carr)
-        
+
 def console_load_asc(con, filename) :
     _lib.TCOD_console_load_asc(con,filename)
 def console_save_asc(con, filename) :
@@ -1032,6 +1078,7 @@ def sys_register_SDL_renderer(callback):
     _lib.TCOD_sys_register_SDL_renderer(sdl_renderer_func)
 
 # events
+EVENT_NONE=0
 EVENT_KEY_PRESS=1
 EVENT_KEY_RELEASE=2
 EVENT_KEY=EVENT_KEY_PRESS|EVENT_KEY_RELEASE
@@ -1200,6 +1247,7 @@ def mouse_get_status():
 ############################
 _lib.TCOD_struct_get_name.restype = c_char_p
 _lib.TCOD_struct_is_mandatory.restype = c_bool
+_lib.TCOD_parser_has_property.restype = c_bool
 _lib.TCOD_parser_get_bool_property.restype = c_bool
 _lib.TCOD_parser_get_float_property.restype = c_float
 _lib.TCOD_parser_get_string_property.restype = c_char_p
@@ -1360,6 +1408,9 @@ def parser_run(parser, filename, listener=0):
 
 def parser_delete(parser):
     _lib.TCOD_parser_delete(parser)
+
+def parser_has_property(parser, name):
+    return _lib.TCOD_parser_has_property(parser, c_char_p(name))
 
 def parser_get_bool_property(parser, name):
     return _lib.TCOD_parser_get_bool_property(parser, c_char_p(name))
@@ -1579,7 +1630,7 @@ def path_size(p):
     return _lib.TCOD_path_size(p[0])
 
 def path_reverse(p):
-    _lib.TCOD_path_reverse(p[0])  
+    _lib.TCOD_path_reverse(p[0])
 
 def path_get(p, idx):
     x = c_int()
@@ -1673,7 +1724,7 @@ _lib.TCOD_bsp_find_node.restype = POINTER(_CBsp)
 
 BSP_CBK_FUNC = CFUNCTYPE(c_int, c_void_p, c_void_p)
 
-# python class encapsulating the _CBsp pointer
+# Python class encapsulating the _CBsp pointer
 class Bsp(object):
     def __init__(self, cnode):
         pcbsp = cast(cnode, POINTER(_CBsp))
@@ -1755,7 +1806,7 @@ def bsp_find_node(node, cx, cy):
     return Bsp(_lib.TCOD_bsp_find_node(node.p, cx, cy))
 
 def _bsp_traverse(node, callback, userData, func):
-    # convert the c node into a python node
+    # convert the c node into a Python node
     #before passing it to the actual callback
     def node_converter(cnode, data):
         node = Bsp(cnode)
@@ -1856,6 +1907,9 @@ def heightmap_add_hill(hm, x, y, radius, height):
 def heightmap_dig_hill(hm, x, y, radius, height):
     _lib.TCOD_heightmap_dig_hill(hm.p, c_float( x), c_float( y),
                                  c_float( radius), c_float( height))
+
+def heightmap_mid_point_displacement(hm, rng, roughness):
+    _lib.TCOD_heightmap_mid_point_displacement(hm.p, rng, c_float(roughness))
 
 def heightmap_rain_erosion(hm, nbDrops, erosionCoef, sedimentationCoef, rnd=0):
     _lib.TCOD_heightmap_rain_erosion(hm.p, nbDrops, c_float( erosionCoef),
