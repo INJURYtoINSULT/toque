@@ -35,7 +35,7 @@ FIREBALL_DAMAGE = 12
 LEVEL_UP_BASE = 200
 LEVEL_UP_FACTOR = 150
 
-LIMIT_FPS = 20
+LIMIT_FPS = 30
 
 color_dark_wall = libtcod.Color(0, 0, 100)
 color_light_wall = libtcod.Color(130, 110, 50)
@@ -873,7 +873,7 @@ def cast_confuse():
 
 def new_game():
     global player, inventory, game_msgs, game_state, dungeon_level
-
+    
     #Create object representing player
     fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, death_function = player_death)
     player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
@@ -940,6 +940,7 @@ def play_game():
 
         #Player turn
         player_action = handle_keys()
+        print player_action
         if player_action == 'exit':
             save_game()
             break
