@@ -37,9 +37,9 @@ LEVEL_UP_FACTOR = 150
 
 LIMIT_FPS = 30
 
-color_dark_wall = libtcod.Color(28, 27, 27)
+color_dark_wall = libtcod.Color(18, 17, 17)
 color_light_wall = libtcod.Color(193, 77, 42)
-color_dark_ground = libtcod.Color(52, 52, 52)
+color_dark_ground = libtcod.Color(32, 32, 32)
 color_light_ground = libtcod.Color(255, 171, 64)
 
 ROOM_MAX_SIZE = 10
@@ -609,21 +609,30 @@ def render_all():
                 visible = libtcod.map_is_in_fov(fov_map, x, y)
                 wall = map[x][y].block_sight
 
+                distance_light = TORCH_RADIUS + 1 - player.distance(x, y) #Make the light dimmer further from player
+                distance_dark = SCREEN_WIDTH - player.distance(x, y)
+                distance_light = abs(distance_light) ** 0.5 #Square root to make transition non linear
+                distance_dark = abs(distance_dark) ** 0.5
+     
                 if not visible:
                     #If it's not visible right now, the player can only see it if it is already explored
                     if map[x][y].explored:
                         #It is out of FOV
                         if wall:
-                            libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
+                            libtcod.console_set_char_background(con, x, y, 
+                                    color_dark_wall * (0.075) * distance_dark, libtcod.BKGND_SET)
                         else:
-                            libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
+                            libtcod.console_set_char_background(con, x, y, 
+                                    color_dark_ground * (0.075) * distance_dark, libtcod.BKGND_SET)
                             libtcod.console_set_char(con, x, y, ' ')
                 else:
                     #It's visible
                     if wall:
-                        libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET)
+                        libtcod.console_set_char_background(con, x, y, 
+                                color_light_wall * (0.35) * distance_light, libtcod.BKGND_SET)
                     else:
-                        libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET)
+                        libtcod.console_set_char_background(con, x, y, 
+                                color_light_ground * (0.35) * distance_light, libtcod.BKGND_SET)
                         libtcod.console_set_char_foreground(con, x, y, libtcod.dark_orange)
                         libtcod.console_set_char(con, x, y, map[x][y].char)
                     #Since it is visible, explore it
