@@ -37,10 +37,10 @@ LEVEL_UP_FACTOR = 150
 
 LIMIT_FPS = 30
 
-color_dark_wall = libtcod.Color(0, 0, 100)
-color_light_wall = libtcod.Color(130, 110, 50)
-color_dark_ground = libtcod.Color(50, 50, 150)
-color_light_ground = libtcod.Color(200, 180, 50)
+color_dark_wall = libtcod.Color(38, 37, 37)
+color_light_wall = libtcod.Color(193, 77, 42)
+color_dark_ground = libtcod.Color(82, 82, 82)
+color_light_ground = libtcod.Color(255, 171, 64)
 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
