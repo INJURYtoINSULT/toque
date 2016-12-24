@@ -37,9 +37,9 @@ LEVEL_UP_FACTOR = 150
 
 LIMIT_FPS = 30
 
-color_dark_wall = libtcod.Color(38, 37, 37)
+color_dark_wall = libtcod.Color(28, 27, 27)
 color_light_wall = libtcod.Color(193, 77, 42)
-color_dark_ground = libtcod.Color(82, 82, 82)
+color_dark_ground = libtcod.Color(52, 52, 52)
 color_light_ground = libtcod.Color(255, 171, 64)
 
 ROOM_MAX_SIZE = 10
@@ -58,9 +58,10 @@ TORCH_RADIUS = 10
 
 class Tile:
     #Map tile and its properties
-    def __init__(self, blocked, block_sight = None):
+    def __init__(self, blocked, char = ' ', block_sight = None):
         self.blocked = blocked
-        
+        self.char = char
+
         #Tiles start unexplored
         self.explored = False
 
@@ -278,23 +279,35 @@ class Rect:
 
 def create_room(room):
     global map
+    rubble_chances = {'space': 90, 'period': 5, 'comma': 5}
     #Make floor tiles passable
     for x in range(room.x1 + 1, room.x2):
         for y in range(room.y1 + 1, room.y2):
+            choice = random_choice(rubble_chances) #Picking random litter for the cave floor
+            rubble = {'space': ' ', 'period': '.', 'comma': ','}
             map[x][y].blocked = False
             map[x][y].block_sight = False
+            map[x][y].char = rubble[choice]
 
 def create_h_tunnel(x1, x2, y):
     global map
+    rubble_chances = {'space': 90, 'period': 5, 'comma': 5}
     for x in range(min(x1, x2), max(x1, x2) + 1):
+        choice = random_choice(rubble_chances)
+        rubble = {'space': ' ', 'period': '.', 'comma': ','}
         map[x][y].blocked = False
         map[x][y].block_sight = False
+        map[x][y].char = rubble[choice]
 
 def create_v_tunnel(y1, y2, x):
     global map
+    rubble_chances = {'space': 90, 'period': 5, 'comma': 5}
     for y in range(min(y1, y2), max(y1, y2) + 1):
+        choice = random_choice(rubble_chances)
+        rubble = {'space': ' ', 'period': '.', 'comma': ','}
         map[x][y].blocked = False
         map[x][y].block_sight = False
+        map[x][y].char = rubble[choice]
 
 ##################################
 # GUI Elements
@@ -586,7 +599,7 @@ def render_all():
     global fov_map, color_dark_wall, color_light_wall
     global color_dark_ground, color_light_ground
     global fov_recompute
-
+    
     if fov_recompute:
         #Recompute FOV
         fov_recompute = False
@@ -595,6 +608,7 @@ def render_all():
             for x in range(MAP_WIDTH):
                 visible = libtcod.map_is_in_fov(fov_map, x, y)
                 wall = map[x][y].block_sight
+
                 if not visible:
                     #If it's not visible right now, the player can only see it if it is already explored
                     if map[x][y].explored:
@@ -603,12 +617,15 @@ def render_all():
                             libtcod.console_set_char_background(con, x, y, color_dark_wall, libtcod.BKGND_SET)
                         else:
                             libtcod.console_set_char_background(con, x, y, color_dark_ground, libtcod.BKGND_SET)
+                            libtcod.console_set_char(con, x, y, ' ')
                 else:
                     #It's visible
                     if wall:
                         libtcod.console_set_char_background(con, x, y, color_light_wall, libtcod.BKGND_SET)
                     else:
                         libtcod.console_set_char_background(con, x, y, color_light_ground, libtcod.BKGND_SET)
+                        libtcod.console_set_char_foreground(con, x, y, libtcod.dark_orange)
+                        libtcod.console_set_char(con, x, y, map[x][y].char)
                     #Since it is visible, explore it
                     map[x][y].explored = True
 
@@ -940,7 +957,6 @@ def play_game():
 
         #Player turn
         player_action = handle_keys()
-        print player_action
         if player_action == 'exit':
             save_game()
             break
