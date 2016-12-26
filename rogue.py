@@ -423,7 +423,7 @@ def make_map():
     #The list of objects with just the player
     objects = [player]
     
-    rubble_chances = {'space': 80, 'period': 5, 'comma': 5, 'backtick': 5, 'asterisk': 5}
+    rubble_chances = {'space': 496, 'period': 2, 'comma': 2, 'backtick': 2, 'asterisk': 1}
     
     rubble = {'space': ' ', 'period': '.', 'comma': ',', 'backtick': '`', 'asterisk': '*'}
     
@@ -436,11 +436,6 @@ def make_map():
         for x in range(MAP_WIDTH):
             choice = random_choice(rubble_chances) #Picking random litter for the cave floor
             map[x][y].char = rubble[choice]
-            print map[x][y].char + ', '
-            libtcod.console_set_char_background(con, x, y, libtcod.green)
-            libtcod.console_set_default_foreground(con, libtcod.white)
-            libtcod.console_set_char(con, x, y, map[x][y].char)
-
 
     #Generate rooms     
     rooms = []
@@ -613,7 +608,7 @@ def render_all():
     global fov_map, color_dark_wall, color_light_wall
     global color_dark_ground, color_light_ground
     global fov_recompute
-    
+
     if fov_recompute:
         #Recompute FOV
         fov_recompute = False
@@ -947,6 +942,12 @@ def initialize_fov():
     
     libtcod.console_clear(con) #Unexplored areas start as black
 
+    for y in range(MAP_HEIGHT):
+        for x in range(MAP_WIDTH):
+            libtcod.console_set_char_background(con, x, y, libtcod.black)
+            libtcod.console_set_char_foreground(con, x, y, libtcod.darker_grey)
+            libtcod.console_set_char(con, x, y, map[x][y].char)
+    
 def next_level():
     #Advance to next level
     global dungeon_level
