@@ -422,12 +422,26 @@ def make_map():
 
     #The list of objects with just the player
     objects = [player]
-
+    
+    rubble_chances = {'space': 80, 'period': 5, 'comma': 5, 'backtick': 5, 'asterisk': 5}
+    
+    rubble = {'space': ' ', 'period': '.', 'comma': ',', 'backtick': '`', 'asterisk': '*'}
+    
     #Fill map with "blocked" tiles
     map = [[ Tile(True)
     for y in range(MAP_HEIGHT) ]
         for x in range(MAP_WIDTH) ]
-            
+    
+    for y in range(MAP_HEIGHT):
+        for x in range(MAP_WIDTH):
+            choice = random_choice(rubble_chances) #Picking random litter for the cave floor
+            map[x][y].char = rubble[choice]
+            print map[x][y].char + ', '
+            libtcod.console_set_char_background(con, x, y, libtcod.green)
+            libtcod.console_set_default_foreground(con, libtcod.white)
+            libtcod.console_set_char(con, x, y, map[x][y].char)
+
+
     #Generate rooms     
     rooms = []
     num_rooms = 0
@@ -647,7 +661,7 @@ def render_all():
     libtcod.console_blit(con, 0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 0, 0, 0)
 
     #Prepare to render GUI panel
-    libtcod.console_set_default_background(panel, libtcod.black)
+    libtcod.console_set_default_background(panel, libtcod.darkest_grey)
     libtcod.console_clear(panel)
 
     #Print the game messages, one line at a time
@@ -666,7 +680,8 @@ def render_all():
             libtcod.darker_green, libtcod.darkest_green)
 
     #Print dungeon level
-    libtcod.console_print_ex(panel, 1, 3, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon Level: ' + str(dungeon_level))
+    libtcod.console_print_ex(panel, 1, 4, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon Level: ' + str(dungeon_level))
+    libtcod.console_print_ex(panel, 1, 5, libtcod.BKGND_NONE, libtcod.LEFT, 'Player Level: ' + str(player.level))
 
     #Display names of objects under the mouse
     libtcod.console_set_default_foreground(panel, libtcod.light_gray)
