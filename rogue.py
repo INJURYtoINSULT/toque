@@ -135,6 +135,39 @@ class Object:
         #erase the character that represents this object
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
 
+class Item:
+    #An item that can be picked up and used
+    def __init__(self, use_function=None):
+        self.use_function = use_function
+
+    #An item that can be picked up and used
+    def pick_up(self):
+        #Add to player's inventory and remove from map
+        if len(inventory) >= 26:
+            message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+        else:
+            inventory.append(self.owner)
+            objects.remove(self.owner)
+            message('You picked up ' + self.owner.name + '!', libtcod.green)
+    
+    def drop(self):
+        #Add to the map and remove from the player's inventory, also, place it at the player's coordinates
+        objects.append(self.owner)
+        inventory.remove(self.owner)
+        
+        self.owner.x = player.x
+        self.owner.y = player.y
+
+        message('You dropped a ' + self.owner.name + '.', libtcod.yellow)
+
+    def use(self):
+        #Just call the "use function" if it is defined
+        if self.use_function is None:
+            message('The ', self.owner.name + ' cannot be used.')
+        else:
+            if self.use_function() != 'cancelled':
+                inventory.remove(self.owner) #Destroy after use
+
 #################################
 # Object Children
 #################################
@@ -209,52 +242,6 @@ class ConfusedMonster:
         else: #Restore the previous ai (this one will be deleted because it's not anymore)
             self.owner.ai = self.old_ai
             message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)
-
-
-class Item:
-    #An item that can be picked up and used
-    def __init__(self, use_function=None):
-        self.use_function = use_function
-
-    #An item that can be picked up and used
-    def pick_up(self):
-        #Add to player's inventory and remove from map
-        if len(inventory) >= 26:
-            message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
-        else:
-            inventory.append(self.owner)
-            objects.remove(self.owner)
-            message('You picked up ' + self.owner.name + '!', libtcod.green)
-    
-    def drop(self):
-        #Add to the map and remove from the player's inventory, also, place it at the player's coordinates
-        objects.append(self.owner)
-        inventory.remove(self.owner)
-        
-        self.owner.x = player.x
-        self.owner.y = player.y
-
-        message('You dropped a ' + self.owner.name + '.', libtcod.yellow)
-
-    def use(self):
-        #Just call the "use function" if it is defined
-        if self.use_function is None:
-            message('The ', self.owner.name + ' cannot be used.')
-        else:
-            if self.use_function() != 'cancelled':
-                inventory.remove(self.owner) #Destroy after use
-
-def is_blocked(x, y):
-    #First test map tile
-    if map[x][y].blocked:
-        return True
-
-    #Now check Objects
-    for object in objects:
-        if object.blocks and object.x == x and object.y == y:
-            return True
-    
-    return False
 
 ##################################
 # Dungeon parts
@@ -603,6 +590,18 @@ def place_objects(room):
 
             objects.append(item)
             item.send_to_back() #Items appear below other items
+
+def is_blocked(x, y):
+    #First test map tile
+    if map[x][y].blocked:
+        return True
+
+    #Now check Objects
+    for object in objects:
+        if object.blocks and object.x == x and object.y == y:
+            return True
+    
+    return False
 
 def render_all():
     global fov_map, color_dark_wall, color_light_wall
