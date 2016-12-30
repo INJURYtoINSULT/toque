@@ -71,7 +71,8 @@ class Tile:
 
 class Object:
     #Generic object
-    def __init__(self, x, y, char, name, color, blocks = False, always_visible = False, fighter = None, ai = None, item = None):
+    def __init__(self, x, y, char, name, color, blocks = False, 
+            always_visible = False, fighter = None, ai = None, item = None, equipment = None):
         self.x = x
         self.y = y
         self.char = char
@@ -87,6 +88,13 @@ class Object:
             self.ai.owner = self
         self.item = item
         if self.item:
+            self.item.owner = self
+        self.equipment = equipment
+        if self.equipment:
+            self.equipment.owner = self
+            
+            #There must be an Item component for the Equipment component to work properly
+            self.item = Item()
             self.item.owner = self
 
     def move(self, dx, dy):
@@ -134,39 +142,6 @@ class Object:
     def clear(self):
         #erase the character that represents this object
         libtcod.console_put_char(con, self.x, self.y, ' ', libtcod.BKGND_NONE)
-
-class Item:
-    #An item that can be picked up and used
-    def __init__(self, use_function=None):
-        self.use_function = use_function
-
-    #An item that can be picked up and used
-    def pick_up(self):
-        #Add to player's inventory and remove from map
-        if len(inventory) >= 26:
-            message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
-        else:
-            inventory.append(self.owner)
-            objects.remove(self.owner)
-            message('You picked up ' + self.owner.name + '!', libtcod.green)
-    
-    def drop(self):
-        #Add to the map and remove from the player's inventory, also, place it at the player's coordinates
-        objects.append(self.owner)
-        inventory.remove(self.owner)
-        
-        self.owner.x = player.x
-        self.owner.y = player.y
-
-        message('You dropped a ' + self.owner.name + '.', libtcod.yellow)
-
-    def use(self):
-        #Just call the "use function" if it is defined
-        if self.use_function is None:
-            message('The ', self.owner.name + ' cannot be used.')
-        else:
-            if self.use_function() != 'cancelled':
-                inventory.remove(self.owner) #Destroy after use
 
 #################################
 # Object Children
@@ -242,6 +217,66 @@ class ConfusedMonster:
         else: #Restore the previous ai (this one will be deleted because it's not anymore)
             self.owner.ai = self.old_ai
             message('The ' + self.owner.name + ' is no longer confused!', libtcod.red)
+
+class Item:
+    #An item that can be picked up and used
+    def __init__(self, use_function=None):
+        self.use_function = use_function
+
+    #An item that can be picked up and used
+    def pick_up(self):
+        #Add to player's inventory and remove from map
+        if len(inventory) >= 26:
+            message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
+        else:
+            inventory.append(self.owner)
+            objects.remove(self.owner)
+            message('You picked up ' + self.owner.name + '!', libtcod.green)
+    
+    def drop(self):
+        #Add to the map and remove from the player's inventory, also, place it at the player's coordinates
+        objects.append(self.owner)
+        inventory.remove(self.owner)
+        
+        self.owner.x = player.x
+        self.owner.y = player.y
+
+        message('You dropped a ' + self.owner.name + '.', libtcod.yellow)
+
+    def use(self):
+        #Special case: if the object has the equipment component, the 'use' action is to equip/dequip
+        if self.owner.equipment:
+            self.owner.equipment.toggle_equip()
+            return
+        
+        #Just call the "use function" if it is defined
+        if self.use_function is None:
+            message('The ', self.owner.name + ' cannot be used.')
+        else:
+            if self.use_function() != 'cancelled':
+                inventory.remove(self.owner) #Destroy after use
+
+class Equipment:
+    #An object that can be equipped, yielding bonuses, automatically adds the item component.
+    def __init__(self, slot):
+        self.slot = slot
+        self.is_equipped = False
+
+    def toggle_equip(self): #Toggle equip/dequip status
+        if self.is_equipped:
+            self.dequip()
+        else:
+            self.equip()
+
+    def equip(self):
+        #Equip object and show a message about it
+        self.is_equipped = True
+        message('Equipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_green)
+
+    def dequip(self):
+        #Dequip object and show a message about it
+        self.is_equipped = False
+        message('Dequipped ' + self.owner.name + ' on ' + self.slot + '.', libtcod.light_yellow)
 
 ##################################
 # Dungeon parts
@@ -524,10 +559,11 @@ def place_objects(room):
 
     #Chance of each item (by default they have a chance of 0 at level 1, which then goes up)
     item_chances = {}
-    item_chances['heal'] = 35 #Healing potion always shows up, even if all other items have 0 chance
+    item_chances['heal'] =      35 #Healing potion always shows up, even if all other items have 0 chance
     item_chances['lightning'] = from_dungeon_level([[25, 4]])
-    item_chances['fireball'] = from_dungeon_level([[25, 6]])
-    item_chances['confuse'] = from_dungeon_level([[10, 2]])
+    item_chances['fireball'] =  from_dungeon_level([[25, 6]])
+    item_chances['confuse'] =   from_dungeon_level([[10, 2]])
+    item_chances['sword'] =     25
 
     for i in range(num_monsters):
         #Random position in room
@@ -587,6 +623,11 @@ def place_objects(room):
                 item_component = Item(use_function = cast_confuse)
 
                 item = Object(x, y, '#', 'scroll of confusion', libtcod.light_yellow, item=item_component)
+
+            elif choice == 'sword':
+                #Create a sword
+                equipment_component = Equipment(slot='right hand')
+                item = Object(x, y, '/', 'sword', libtcod.sky, equipment=equipment_component)
 
             objects.append(item)
             item.send_to_back() #Items appear below other items
