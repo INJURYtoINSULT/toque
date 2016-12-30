@@ -905,7 +905,7 @@ def check_level_up():
             choice = menu('Level up! Choose a stat to focus:\n',
                     ['Constitution (+20 HP, from ' + str(player.fighter.max_hp) + ')',
                         'Strength (+1 attack, from ' + str(player.fighter.power) + ')',
-                        'Agility ( +1 defense, from ' + str(player.fighter.defense) + ')'], LEVEL_SCREEN_WIDTH)
+                        'Agility (+1 defense, from ' + str(player.fighter.defense) + ')'], LEVEL_SCREEN_WIDTH)
             if choice == 0:
                 player.fighter.base_max_hp += 20
                 player.fighter.hp += 20
