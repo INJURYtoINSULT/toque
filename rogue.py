@@ -150,12 +150,27 @@ class Object:
 class Fighter:
     #Combat-related properties and methods
     def __init__(self, hp, defense, power, xp, death_function = None):
-        self.max_hp = hp
+        self.base_max_hp = hp
         self.hp = hp
-        self.defense = defense
-        self.power = power
+        self.base_defense = defense
+        self.base_power = power
         self.xp = xp
         self.death_function = death_function
+
+    @property
+    def power(self): #Return actual power, by adding bonuses from all equipped items
+        bonus = sum(equipment.power_bonus for equipment in get_all_equipped(self.owner))
+        return self.base_power + bonus
+    
+    @property
+    def defense(self): #Return actual power, by adding bonuses from all equipped items
+        bonus = sum(equipment.defense_bonus for equipment in get_all_equipped(self.owner))
+        return self.base_defense + bonus
+
+    @property
+    def max_hp(self): #Return actual power, by adding bonuses from all equipped items
+        bonus = sum(equipment.max_hp_bonus for equipment in get_all_equipped(self.owner))
+        return self.base_max_hp + bonus
 
     def attack(self, target):
         #Simple formula for attack damage
@@ -267,7 +282,11 @@ class Item:
 
 class Equipment:
     #An object that can be equipped, yielding bonuses, automatically adds the item component.
-    def __init__(self, slot):
+    def __init__(self, slot, power_bonus=0, defense_bonus=0, max_hp_bonus=0):
+        self.power_bonus = power_bonus
+        self.defense_bonus = defense_bonus
+        self.max_hp_bonus = max_hp_bonus
+
         self.slot = slot
         self.is_equipped = False
 
@@ -582,7 +601,8 @@ def place_objects(room):
     item_chances['lightning'] = from_dungeon_level([[25, 4]])
     item_chances['fireball'] =  from_dungeon_level([[25, 6]])
     item_chances['confuse'] =   from_dungeon_level([[10, 2]])
-    item_chances['sword'] =     25
+    item_chances['sword'] =     from_dungeon_level([[5, 4]])
+    item_chances['shield'] =    from_dungeon_level([[15, 8]])
 
     for i in range(num_monsters):
         #Random position in room
@@ -645,9 +665,14 @@ def place_objects(room):
 
             elif choice == 'sword':
                 #Create a sword
-                equipment_component = Equipment(slot='right hand')
+                equipment_component = Equipment(slot='right hand', power_bonus=3)
                 item = Object(x, y, '/', 'sword', libtcod.sky, equipment=equipment_component)
 
+            elif choice == 'shield':
+                #Create a shield
+                equipment_component = Equipment(slot='left hand', defense_bonus=1)
+                item = Object(x, y, '[', 'shield', libtcod.darker_orange, equipment=equipment_component)
+            
             objects.append(item)
             item.send_to_back() #Items appear below other items
 
@@ -668,6 +693,16 @@ def get_equipped_in_slot(slot): #Returns the equipment in a slot, or None if it'
         if obj.equipment and obj.equipment.slot == slot and obj.equipment.is_equipped:
             return obj.equipment
     return None
+
+def get_all_equipped(obj): #Returns a list of equipped items
+    if obj == player:
+        equipped_list = []
+        for item in inventory:
+            if item.equipment and item.equipment.is_equipped:
+                equipped_list.append(item.equipment)
+        return equipped_list
+    else:
+        return [] #No other objects should have equipment
 
 def render_all():
     global fov_map, color_dark_wall, color_light_wall
@@ -872,12 +907,12 @@ def check_level_up():
                         'Strength (+1 attack, from ' + str(player.fighter.power) + ')',
                         'Agility ( +1 defense, from ' + str(player.fighter.defense) + ')'], LEVEL_SCREEN_WIDTH)
             if choice == 0:
-                player.fighter.max_hp += 20
+                player.fighter.base_max_hp += 20
                 player.fighter.hp += 20
             elif choice == 1:
-                player.fighter.power += 1
+                player.fighter.base_power += 1
             elif choice == 2:
-                player.fighter.defense += 1
+                player.fighter.base_defense += 1
 
 def target_tile(max_range=None):
     #Return of a tile left-clicked in player's FOV (optionally in range), or (None, None) if right-clicked
