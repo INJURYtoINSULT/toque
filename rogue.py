@@ -256,7 +256,7 @@ class Item:
     def drop(self):
         #Special case: if the object has the Equipment component, dequip it before dropping
         if self.owner.equipment:
-            self.ownere.equipment.dequip()
+            self.owner.equipment.dequip()
         
         #Add to the map and remove from the player's inventory, also, place it at the player's coordinates
         objects.append(self.owner)
