@@ -50,7 +50,7 @@ MAX_ROOM_ITEMS = 2
 
 FOV_ALGO = 0
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 10
+TORCH_RADIUS = 30
 
 ##################################
 # Generic Classes
@@ -477,6 +477,17 @@ def get_names_under_mouse():
 # Functions
 ##################################
 
+def make_overworld():
+    global map, objects, trees
+
+    objects = [player]
+    trees = []
+    
+    map = [[ Tile(False)
+        for y in range(MAP_HEIGHT) ]
+        for x in range(MAP_WIDTH) ]
+    place_objects(Rect(1, 1, MAP_WIDTH - 1, MAP_HEIGHT - 1))
+
 def make_map():
     global map, objects, stairs
 
@@ -604,6 +615,34 @@ def place_objects(room):
     item_chances['sword'] =     from_dungeon_level([[5, 4]])
     item_chances['shield'] =    from_dungeon_level([[15, 8]])
 
+    rubble_chances = {'tree': 50, 'none': 50}
+    
+    for y in range(MAP_HEIGHT):
+        for x in range(MAP_WIDTH):
+            if (random_choice(rubble_chances) == 'tree'):
+                tree = Object(x, y, 't', 'tree', libtcod.darker_sepia, blocks=True)
+                trees.append(tree)
+                objects.append(tree)
+
+    for i in range(1):
+        for tree in trees:
+            if get_neighbors(3, tree.x, tree.y) < 2: #Tree is lonely
+                tree.clear()
+                trees.remove(tree)
+                objects.remove(tree)
+            elif get_neighbors(3, tree.x, tree.y) == 4: #Tree is healthy
+                new_x = libtcod.random_get_int(0, tree.x - 3, tree.x - 3)
+                new_y = libtcod.random_get_int(0, tree.y - 3, tree.y - 3)
+                new_tree = Object(new_x, new_y, 't', 'tree', libtcod.darker_sepia, blocks=True)
+                trees.append(new_tree)
+                objects.append(new_tree)
+            elif get_neighbors(3, tree.x, tree.y) > 4: #Tree is overcrowded
+                tree.clear()
+                trees.remove(tree)
+                objects.remove(tree)
+            #Else the tree is in balance
+                
+
     for i in range(num_monsters):
         #Random position in room
         x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
@@ -685,8 +724,20 @@ def is_blocked(x, y):
     for object in objects:
         if object.blocks and object.x == x and object.y == y:
             return True
-    
+    for tree in trees:
+        if tree.blocks and object.x == x and object.y == y:
+            return True
     return False
+
+def get_neighbors(size, x, y):
+    neighbors = 0
+    libtcod.console_set_char_background(con, x, y, libtcod.red, libtcod.BKGND_SET)
+    for new_x in xrange(x - size, x + size):
+        for new_y in xrange(y - size, y + size):
+            for tree in trees:
+                if tree.x == new_x and tree.y == new_y:
+                    neighbors += 1
+    return neighbors
 
 def get_equipped_in_slot(slot): #Returns the equipment in a slot, or None if it's empty
     for obj in inventory:
@@ -750,6 +801,8 @@ def render_all():
     #draw all objects in the list
     for object in objects:
         object.draw()
+    for tree in trees:
+        tree.draw()
     player.draw()
 
     #Blit to con
@@ -1018,7 +1071,7 @@ def new_game():
 
     #Generate Map
     dungeon_level = 1
-    make_map()
+    make_overworld()
     initialize_fov()
 
     game_state = 'playing'
