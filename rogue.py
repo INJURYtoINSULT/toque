@@ -615,7 +615,7 @@ def place_objects(room):
     item_chances['sword'] =     from_dungeon_level([[5, 4]])
     item_chances['shield'] =    from_dungeon_level([[15, 8]])
 
-    rubble_chances = {'tree': 50, 'none': 50}
+    rubble_chances = {'tree': 1, 'none': 19}
     
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
@@ -623,25 +623,24 @@ def place_objects(room):
                 tree = Object(x, y, 't', 'tree', libtcod.darker_sepia, blocks=True)
                 trees.append(tree)
                 objects.append(tree)
-
+    
     for i in range(1):
         for tree in trees:
-            if get_neighbors(3, tree.x, tree.y) < 2: #Tree is lonely
+            if get_neighbors(10, tree.x, tree.y) < 2: #Tree is lonely
                 tree.clear()
                 trees.remove(tree)
                 objects.remove(tree)
-            elif get_neighbors(3, tree.x, tree.y) == 4: #Tree is healthy
+            elif get_neighbors(6, tree.x, tree.y) == 4: #Tree is healthy
                 new_x = libtcod.random_get_int(0, tree.x - 3, tree.x - 3)
                 new_y = libtcod.random_get_int(0, tree.y - 3, tree.y - 3)
                 new_tree = Object(new_x, new_y, 't', 'tree', libtcod.darker_sepia, blocks=True)
                 trees.append(new_tree)
                 objects.append(new_tree)
-            elif get_neighbors(3, tree.x, tree.y) > 4: #Tree is overcrowded
+            elif get_neighbors(3, tree.x, tree.y) > 6: #Tree is overcrowded
                 tree.clear()
                 trees.remove(tree)
                 objects.remove(tree)
             #Else the tree is in balance
-                
 
     for i in range(num_monsters):
         #Random position in room
