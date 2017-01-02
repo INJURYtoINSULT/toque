@@ -40,7 +40,7 @@ LIMIT_FPS = 30
 color_dark_wall = libtcod.Color(18, 17, 17)
 color_light_wall = libtcod.Color(193, 77, 42)
 color_dark_ground = libtcod.Color(32, 32, 32)
-color_light_ground = libtcod.gray #libtcod.Color(255, 171, 64)
+color_light_ground = libtcod.dark_gray #libtcod.Color(255, 171, 64)
 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
@@ -50,7 +50,7 @@ MAX_ROOM_ITEMS = 2
 
 FOV_ALGO = 0
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 30
+TORCH_RADIUS = MAP_HEIGHT
 
 ##################################
 # Generic Classes
@@ -477,7 +477,7 @@ def get_names_under_mouse():
 # Functions
 ##################################
 
-def make_overworld():
+def make_hub():
     global map, objects, trees
 
     objects = [player]
@@ -620,7 +620,7 @@ def place_objects(room):
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             if (random_choice(rubble_chances) == 'tree'):
-                tree = Object(x, y, 't', 'tree', libtcod.darker_sepia, blocks=True)
+                tree = Object(x, y, 179, 'tree', libtcod.darker_sepia, blocks=True)
                 trees.append(tree)
                 objects.append(tree)
     
@@ -1070,7 +1070,7 @@ def new_game():
 
     #Generate Map
     dungeon_level = 1
-    make_overworld()
+    make_hub()
     initialize_fov()
 
     game_state = 'playing'
