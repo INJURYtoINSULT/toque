@@ -40,7 +40,7 @@ LIMIT_FPS = 30
 color_dark_wall = libtcod.Color(18, 17, 17)
 color_light_wall = libtcod.Color(193, 77, 42)
 color_dark_ground = libtcod.Color(32, 32, 32)
-color_light_ground = libtcod.Color(255, 171, 64)
+color_light_ground = libtcod.gray #libtcod.Color(255, 171, 64)
 
 ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
@@ -1064,7 +1064,7 @@ def new_game():
     
     #Create object representing player
     fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, death_function = player_death)
-    player = Object(25, 23, '@', 'player',  libtcod.white, blocks = True, fighter = fighter_component)
+    player = Object(25, 23, '@', 'player',  libtcod.black, blocks = True, fighter = fighter_component)
 
     player.level = 1
 
@@ -1121,7 +1121,7 @@ def play_game():
     key = libtcod.Key()
     while not libtcod.console_is_window_closed():
         
-        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS|libtcod.EVENT_MOUSE,key,mouse)
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_RELEASE|libtcod.EVENT_MOUSE,key,mouse)
         render_all()
 
         libtcod.console_flush()
