@@ -624,22 +624,22 @@ def place_objects(room):
                 trees.append(tree)
                 objects.append(tree)
     
-    for i in range(1):
-        for tree in trees:
-            if get_neighbors(10, tree.x, tree.y) < 2: #Tree is lonely
-                tree.clear()
-                trees.remove(tree)
-                objects.remove(tree)
-            elif get_neighbors(6, tree.x, tree.y) == 4: #Tree is healthy
-                new_x = libtcod.random_get_int(0, tree.x - 3, tree.x - 3)
-                new_y = libtcod.random_get_int(0, tree.y - 3, tree.y - 3)
-                new_tree = Object(new_x, new_y, 't', 'tree', libtcod.darker_sepia, blocks=True)
-                trees.append(new_tree)
-                objects.append(new_tree)
-            elif get_neighbors(3, tree.x, tree.y) > 6: #Tree is overcrowded
-                tree.clear()
-                trees.remove(tree)
-                objects.remove(tree)
+#    for i in range(1):
+#        for tree in trees:
+#            if get_neighbors(10, tree.x, tree.y) < 2: #Tree is lonely
+#                tree.clear()
+#                trees.remove(tree)
+#                objects.remove(tree)
+#            elif get_neighbors(6, tree.x, tree.y) == 4: #Tree is healthy
+#                new_x = libtcod.random_get_int(0, tree.x - 3, tree.x - 3)
+#                new_y = libtcod.random_get_int(0, tree.y - 3, tree.y - 3)
+#                new_tree = Object(new_x, new_y, 't', 'tree', libtcod.darker_sepia, blocks=True)
+#                trees.append(new_tree)
+#                objects.append(new_tree)
+#            elif get_neighbors(3, tree.x, tree.y) > 6: #Tree is overcrowded
+#                tree.clear()
+#                trees.remove(tree)
+#                objects.remove(tree)
             #Else the tree is in balance
 
     for i in range(num_monsters):
