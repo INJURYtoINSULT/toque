@@ -478,15 +478,21 @@ def get_names_under_mouse():
 ##################################
 
 def make_hub():
-    global map, objects, trees
-
-    objects = [player]
+    global map, hub_objects, objects, trees
+    
+    hub_objects = [player]
+    objects = []
     trees = []
     
+    objects.extend(hub_objects)
+
     map = [[ Tile(False)
         for y in range(MAP_HEIGHT) ]
         for x in range(MAP_WIDTH) ]
     place_objects(Rect(1, 1, MAP_WIDTH - 1, MAP_HEIGHT - 1))
+
+#def load_hub():
+    
 
 def make_map():
     global map, objects, stairs
@@ -1153,7 +1159,7 @@ def save_game():
     file['inventory'] = inventory
     file['game_msgs'] = game_msgs
     file['game_state'] = game_state
-    file['stairs_index'] = objects.index(stairs) #Index of stairs in object list
+#    file['stairs_index'] = objects.index(stairs) #Index of stairs in object list
     file['dungeon_level'] = dungeon_level
     file.close()
 
@@ -1168,7 +1174,7 @@ def load_game():
     inventory = file['inventory']
     game_msgs = file['game_msgs']
     game_state = file['game_state']
-    stairs = objects[file['stairs_index']] #Get index of stairs in objects list and access it
+#    stairs = objects[file['stairs_index']] #Get index of stairs in objects list and access it
     dungeon_level = file['dungeon_level']
     file.close()
 
