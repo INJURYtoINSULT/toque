@@ -69,6 +69,19 @@ class Tile:
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
 
+class Chunk:
+    #Map chunk and its properties
+    def __init__(self, longitude, latitude, objects):
+        self.latitude = latitude
+        self.longitude = longitude
+        self.objects = objects
+   
+    def load(self):
+        global objects
+        objects = [] 
+        objects = self.objects
+        print str(len(objects))
+
 class Object:
     #Generic object
     def __init__(self, x, y, char, name, color, blocks = False, 
@@ -99,9 +112,69 @@ class Object:
 
     def move(self, dx, dy):
         #Move by given amount
-        if not is_blocked(self.x + dx, self.y + dy):
-            self.x += dx
-            self.y += dy
+        if self.name == 'player':
+            if not is_map_edge(self.x + dx, self.y + dy):
+                if not is_blocked(self.x + dx, self.y + dy):
+                    self.x += dx
+                    self.y += dy
+            else:
+                global latitude, longitude, chunks, trees
+                render_all()
+                if self.x + dx >= MAP_WIDTH:
+                    longitude = longitude + 1
+                    for chunk in chunks:
+                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
+                        if chunk.latitude == latitude and chunk.longitude == longitude:
+                            self.x = 0
+                            libtcod.console_clear(con)
+                            chunk.load()
+                            return
+                    self.x = 0
+                    libtcod.console_clear(con)
+                    make_forest()
+
+                elif self.x + dx < 0:
+                    longitude = longitude - 1
+                    for chunk in chunks:
+                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
+                        if chunk.latitude == latitude and chunk.longitude == longitude:
+                            self.x = MAP_WIDTH - 1
+                            chunk.load()
+                            return
+                    self.x = MAP_WIDTH - 1
+                    libtcod.console_clear(con)
+                    make_forest()
+
+                elif self.y + dy >= MAP_HEIGHT:
+                    latitude = latitude + 1
+                    for chunk in chunks:
+                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
+                        if chunk.latitude == latitude and chunk.longitude == longitude:
+                            self.y = 0
+                            libtcod.console_clear(con)
+                            chunk.load()
+                            return
+                    self.y = 0
+                    libtcod.console_clear(con)
+                    make_forest()
+
+                elif self.y + dy < 0:
+                    latitude = latitude - 1
+                    for chunk in chunks:
+                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
+                        if chunk.latitude == latitude and chunk.longitude == longitude:
+                            self.y = MAP_HEIGHT - 1
+                            libtcod.console_clear(con)
+                            chunk.load()
+                            return
+                    self.y = MAP_HEIGHT - 1
+                    libtcod.console_clear(con)
+                    make_forest()
+
+        else:
+            if not is_blocked(self.x + dx, self.y + dy):
+                self.x += dx
+                self.y += dy
 
     def move_toward(self, target_x, target_y):
         #Vector from this object to the target
@@ -477,22 +550,29 @@ def get_names_under_mouse():
 # Functions
 ##################################
 
-def make_hub():
-    global map, hub_objects, objects, trees
-    
-    hub_objects = [player]
-    objects = []
-    trees = []
-    
-    objects.extend(hub_objects)
+def make_forest():
+    global map, objects
+    global latitude, longitude
+
+    objects = [player]
 
     map = [[ Tile(False)
         for y in range(MAP_HEIGHT) ]
         for x in range(MAP_WIDTH) ]
     place_objects(Rect(1, 1, MAP_WIDTH - 1, MAP_HEIGHT - 1))
+    new_chunk = Chunk(longitude, latitude, objects)
+    if not any(chunk.latitude == latitude for chunk in chunks) or not any(chunk.longitude == longitude for chunk in chunks):
+        print 'New chunk: ' + str(new_chunk.latitude) + ', ' + str(new_chunk.longitude)
+        chunks.append(new_chunk)
+    print str(len(objects))
+
+#def load_forest(Chunk):
+#    objects = []
+#    objects = chunk.object
+
+#    render_all()
 
 #def load_hub():
-    
 
 def make_map():
     global map, objects, stairs
@@ -598,6 +678,7 @@ def from_dungeon_level(table):
     return 0
 
 def place_objects(room):
+    global trees
     #Choose random number of monsters
     num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
 
@@ -623,6 +704,8 @@ def place_objects(room):
 
     rubble_chances = {'tree': 1, 'none': 19}
     
+    trees = []
+
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             if (random_choice(rubble_chances) == 'tree'):
@@ -734,6 +817,13 @@ def is_blocked(x, y):
             return True
     return False
 
+def is_map_edge(x, y):
+    if x == MAP_WIDTH or y == MAP_HEIGHT:
+        return True
+    elif x < 0  or y < 0:
+        return True
+    return False
+
 def get_neighbors(size, x, y):
     neighbors = 0
     libtcod.console_set_char_background(con, x, y, libtcod.red, libtcod.BKGND_SET)
@@ -806,8 +896,6 @@ def render_all():
     #draw all objects in the list
     for object in objects:
         object.draw()
-    for tree in trees:
-        tree.draw()
     player.draw()
 
     #Blit to con
@@ -1066,7 +1154,7 @@ def cast_confuse():
 ##################################
 
 def new_game():
-    global player, inventory, game_msgs, game_state, dungeon_level
+    global player, inventory, game_msgs, game_state, dungeon_level, latitude, longitude, chunks
     
     #Create object representing player
     fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, death_function = player_death)
@@ -1074,9 +1162,13 @@ def new_game():
 
     player.level = 1
 
+    latitude = 0
+    longitude = 0
+    chunks = []
+
     #Generate Map
     dungeon_level = 1
-    make_hub()
+    make_forest()
     initialize_fov()
 
     game_state = 'playing'
