@@ -275,23 +275,23 @@ class Fighter:
         if self.hp > self.max_hp:
             self.hp = self.max_hp
 
-class BasicMonster:
-    #AI for basic monster
+class BasicMob:
+    #AI for basic mob
     def take_turn(self):
-        #A basic monster takes its turn. If you can see it, it can see you
-        monster = self.owner
-        if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
+        #A basic mob takes its turn. If you can see it, it can see you
+        mob = self.owner
+        if libtcod.map_is_in_fov(fov_map, mob.x, mob.y):
 
             #Move towards the player if far away
-            if monster.distance_to(player) >= 2:
-                monster.move_toward(player.x, player.y)
+            if mob.distance_to(player) >= 2:
+                mob.move_toward(player.x, player.y)
             
             #Close enough, attack (if player is alive)
             elif player.fighter.hp > 0:
-                monster.fighter.attack(player)
+                mob.fighter.attack(player)
 
-class ConfusedMonster:
-    #AI for temporarily confused monster (Reverts to previous ai after a while)
+class ConfusedMob:
+    #AI for temporarily confused mob (Reverts to previous ai after a while)
     def __init__(self, old_ai, num_turns = CONFUSE_NUM_TURNS):
         self.old_ai = old_ai
         self.num_turns = num_turns
@@ -637,7 +637,7 @@ def make_map():
                     create_v_tunnel(prev_y, new_y, prev_x)
                     create_h_tunnel(prev_x, new_x, new_y)
 
-            #Throw in some monsters
+            #Throw in some mobs
             place_objects(new_room)
 
             rooms.append(new_room)
@@ -646,7 +646,7 @@ def make_map():
     #Create stairs at the center of the last room
     stairs = Object(new_x, new_y, '<', 'stairs', libtcod.white, always_visible = True)
     objects.append(stairs)
-    stairs.send_to_back() #So it is drawn below the monsters
+    stairs.send_to_back() #So it is drawn below the mobs
 
 def random_choice_index(chances): #Choose one option from list of chances, returning its index
     #The dice will land on some number between 1 and the sum of the chances
@@ -679,16 +679,16 @@ def from_dungeon_level(table):
 
 def place_objects(room):
     global trees
-    #Choose random number of monsters
-    num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
+    #Choose random number of mobs
+    num_mobs = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
 
-    #Maximum number of monsters per room
-    max_monsters = from_dungeon_level([[2, 1], [3, 4], [5, 6]])
+    #Maximum number of mobs per room
+    max_mobs = from_dungeon_level([[2, 1], [3, 4], [5, 6]])
 
-    #Chance of each monster
-    monster_chances = {}
-    monster_chances['orc'] = 80 #Orc always shows up even if all other monsters have 0 chance
-    monster_chances['troll'] = from_dungeon_level([[15, 3], [30, 5], [60, 7]])
+    #Chance of each mob
+    mob_chances = {}
+    mob_chances['squirrel'] = 80 #Orc always shows up even if all other mobs have 0 chance
+    mob_chances['rabbit'] = from_dungeon_level([[15, 3], [30, 5], [60, 7]])
 
     #Maximum number of items per room
     max_items = from_dungeon_level([[1, 1], [2, 4]])
@@ -731,29 +731,29 @@ def place_objects(room):
 #                objects.remove(tree)
             #Else the tree is in balance
 
-    for i in range(num_monsters):
+    for i in range(num_mobs):
         #Random position in room
         x = libtcod.random_get_int(0, room.x1 + 1, room.x2 - 1)
         y = libtcod.random_get_int(0, room.y1 + 1, room.y2 - 1)
 
         if not is_blocked(x, y):
-            choice = random_choice(monster_chances)
-            if choice == 'orc':
+            choice = random_choice(mob_chances)
+            if choice == 'squirrel':
                 #Create an orc
-                fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = monster_death)
-                ai_component = BasicMonster()
+                fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = mob_death)
+                ai_component = BasicMob()
                 
-                monster = Object(x, y, 'o', 'orc', libtcod.desaturated_green, blocks = True, 
+                mob = Object(x, y, 's', 'squirrel', libtcod.Color(139, 69, 19), blocks = True, 
                         fighter = fighter_component, ai = ai_component)
-            elif choice == 'troll':
+            elif choice == 'rabbit':
                 #Create a troll
-                fighter_component = Fighter(hp = 16, defense = 1, power = 4, xp = 100, death_function = monster_death)
-                ai_component = BasicMonster()
+                fighter_component = Fighter(hp = 16, defense = 1, power = 4, xp = 100, death_function = mob_death)
+                ai_component = BasicMob()
                 
-                monster = Object(x, y, 'T', 'troll', libtcod.darker_green, blocks = True, 
+                mob = Object(x, y, 'R', 'rabbit', libtcod.darker_green, blocks = True, 
                         fighter = fighter_component, ai = ai_component)
 
-            objects.append(monster)
+            objects.append(mob)
 
     #Choose random number of items
     num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
@@ -1025,17 +1025,17 @@ def player_death(player):
     player.char = '%'
     player.color = libtcod.dark_red
 
-def monster_death(monster):
+def mob_death(mob):
     #Transform into corpse, remove blocking, can't be attacked or move
-    message(monster.name.capitalize() + ' is dead! You gain ' + str(monster.fighter.xp) +
+    message(mob.name.capitalize() + ' is dead! You gain ' + str(mob.fighter.xp) +
             ' experiecne points.' , libtcod.orange)
-    monster.char = '%'
-    monster.color = libtcod.dark_red
-    monster.blocks = False
-    monster.fighter = None
-    monster.ai = None
-    monster.name = 'remains of ' + monster.name
-    monster.send_to_back()
+    mob.char = '%'
+    mob.color = libtcod.dark_red
+    mob.blocks = False
+    mob.fighter = None
+    mob.ai = None
+    mob.name = 'remains of ' + mob.name
+    mob.send_to_back()
 
 def check_level_up():
     #See if the player's experience is enough to level up
@@ -1079,19 +1079,19 @@ def target_tile(max_range=None):
                 (max_range is None or player.distance(x, y) <= max_range)):
             return(x, y)
 
-def target_monster(max_range=None):
-    #Returns a clicked monster inside FOV up to a range, or None if right-clicked
+def target_mob(max_range=None):
+    #Returns a clicked mob inside FOV up to a range, or None if right-clicked
     while True:
         (x, y) = target_tile(max_range)
         if x is None: #Player cancelled
             return None
 
-        #Returns the first clicked monster, otherwise continue looping
+        #Returns the first clicked mob, otherwise continue looping
         for obj in objects:
             if obj.x == x and obj.y == y and obj.fighter and obj != player:
                 return obj
 
-def closest_monster(max_range):
+def closest_mob(max_range):
     #Find the closest enemy, up to a maximum range, and in the players fov
     closest_enemy = None
     closest_dist = max_range + 1 #Start with slightly more than max range
@@ -1116,14 +1116,14 @@ def cast_heal():
 
 def cast_lightning():
     #Find the closest enemy (inside a maximum range) and damage it
-    monster = closest_monster(LIGHTNING_RANGE)
-    if monster is None: #No enemy within maximum range
+    mob = closest_mob(LIGHTNING_RANGE)
+    if mob is None: #No enemy within maximum range
         message('No enemy is close enough to strike.', libtcod.red)
         return 'cancelled'
 
     #Zap it
-    message('A lightning bolt strikes the ' + monster.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
-    monster.fighter.take_damage(LIGHTNING_DAMAGE)
+    message('A lightning bolt strikes the ' + mob.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
+    mob.fighter.take_damage(LIGHTNING_DAMAGE)
 
 def cast_fireball():
     #Ask the player for a target tile to throw a fireball at
@@ -1140,14 +1140,14 @@ def cast_fireball():
 def cast_confuse():
     #Ask the player for a target to confuse
     message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
-    monster = target_monster(CONFUSE_RANGE)
-    if monster is None: return 'cancelled'
+    mob = target_mob(CONFUSE_RANGE)
+    if mob is None: return 'cancelled'
 
-    #Replace the monster's AI with a "confused" one; after some turns it will restore the old AI
-    old_ai = monster.ai
-    monster.ai = ConfusedMonster(old_ai)
-    monster.ai.owner = monster #Tell the component who owns it
-    message('The eyes of the ' + monster.name + ' look vacant and it begins to stumble around.', libtcod.green)
+    #Replace the mob's AI with a "confused" one; after some turns it will restore the old AI
+    old_ai = mob.ai
+    mob.ai = ConfusedMob(old_ai)
+    mob.ai.owner = mob #Tell the component who owns it
+    message('The eyes of the ' + mob.name + ' look vacant and it begins to stumble around.', libtcod.green)
 
 ##################################
 # Game functions
@@ -1236,7 +1236,7 @@ def play_game():
             save_game()
             break
 
-        #Let monsters take their turn
+        #Let mobs take their turn
         if game_state == 'playing' and player_action != 'didnt-take-turn':
             for object in objects:
                 if object.ai:
