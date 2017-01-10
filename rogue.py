@@ -320,7 +320,11 @@ class Item:
     #An item that can be picked up and used
     def pick_up(self):
         #Add to player's inventory and remove from map
-        if len(inventory) >= player.fighter.inventory:
+        if self.owner.equipment and get_equipped_in_slot(self.owner.equipment.slot) is None:
+            inventory.append(self.owner)
+            objects.remove(self.owner)
+            self.owner.equipment.equip()            
+        elif len(inventory) >= player.fighter.inventory:
             message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
         else:
             inventory.append(self.owner)
@@ -1186,7 +1190,7 @@ def new_game():
     message('Welcome stranger!, Prepare to perish in the tombs of ancient kings!', libtcod.red)
 
     #Initial equipment, jeans, hoodie, small pack 
-    jeans_component = Equipment(slot='pants', inventory_bonus=2)
+    jeans_component = Equipment(slot='legs', inventory_bonus=2)
     jeans = Object(0, 0, 'N', 'blue jeans', libtcod.darkest_blue, equipment=jeans_component)
     inventory.append(jeans)
     jeans_component.equip()
