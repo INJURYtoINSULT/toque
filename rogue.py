@@ -222,12 +222,13 @@ class Object:
 
 class Fighter:
     #Combat-related properties and methods
-    def __init__(self, hp, defense, power, xp, death_function = None):
+    def __init__(self, hp, defense, power, xp, inventory=None, death_function = None):
         self.base_max_hp = hp
         self.hp = hp
         self.base_defense = defense
         self.base_power = power
         self.xp = xp
+        self.base_inventory = inventory
         self.death_function = death_function
 
     @property
@@ -244,6 +245,11 @@ class Fighter:
     def max_hp(self): #Return actual power, by adding bonuses from all equipped items
         bonus = sum(equipment.max_hp_bonus for equipment in get_all_equipped(self.owner))
         return self.base_max_hp + bonus
+
+    @property
+    def inventory(self): #Return actual inventory size, by adding bonuses from all equipped items
+        bonus = sum(equipment.inventory_bonus for equipment in get_all_equipped(self.owner))
+        return self.base_inventory + bonus
 
     def attack(self, target):
         #Simple formula for attack damage
@@ -314,7 +320,7 @@ class Item:
     #An item that can be picked up and used
     def pick_up(self):
         #Add to player's inventory and remove from map
-        if len(inventory) >= 26:
+        if len(inventory) >= player.fighter.inventory:
             message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
         else:
             inventory.append(self.owner)
@@ -355,10 +361,11 @@ class Item:
 
 class Equipment:
     #An object that can be equipped, yielding bonuses, automatically adds the item component.
-    def __init__(self, slot, power_bonus=0, defense_bonus=0, max_hp_bonus=0):
+    def __init__(self, slot, power_bonus=0, defense_bonus=0, max_hp_bonus=0, inventory_bonus=0):
         self.power_bonus = power_bonus
         self.defense_bonus = defense_bonus
         self.max_hp_bonus = max_hp_bonus
+        self.inventory_bonus = inventory_bonus
 
         self.slot = slot
         self.is_equipped = False
@@ -810,10 +817,8 @@ def is_blocked(x, y):
 
     #Now check Objects
     for object in objects:
+    #    print
         if object.blocks and object.x == x and object.y == y:
-            return True
-    for tree in trees:
-        if tree.blocks and object.x == x and object.y == y:
             return True
     return False
 
@@ -1157,7 +1162,7 @@ def new_game():
     global player, inventory, game_msgs, game_state, dungeon_level, latitude, longitude, chunks
     
     #Create object representing player
-    fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, death_function = player_death)
+    fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, inventory = 0, death_function = player_death)
     player = Object(25, 23, '@', 'player',  libtcod.black, blocks = True, fighter = fighter_component)
 
     player.level = 1
@@ -1179,6 +1184,12 @@ def new_game():
 
     #Warm welcoming message!
     message('Welcome stranger!, Prepare to perish in the tombs of ancient kings!', libtcod.red)
+
+    #Initial equipment, jeans, hoodie, small pack 
+    jeans_component = Equipment(slot='pants', inventory_bonus=2)
+    jeans = Object(0, 0, 'N', 'blue jeans', libtcod.darkest_blue, equipment=jeans_component)
+    inventory.append(jeans)
+    jeans_component.equip()
 
 def initialize_fov():
     global fov_recompute, fov_map
