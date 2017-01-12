@@ -1194,6 +1194,16 @@ def new_game():
     jeans = Object(0, 0, 'N', 'blue jeans', libtcod.darkest_blue, equipment=jeans_component)
     inventory.append(jeans)
     jeans_component.equip()
+    
+    hoodie_component = Equipment(slot='torso', inventory_bonus=1)
+    hoodie = Object(0, 0, 'T', 'grey hoodie', libtcod.darker_grey, equipment=hoodie_component)
+    inventory.append(hoodie)
+    hoodie_component.equip()
+    
+    toque_component = Equipment(slot='head')
+    toque = Object(0, 0, 'D', 'light blue toque', libtcod.light_blue, equipment=toque_component)
+    inventory.append(toque)
+    toque_component.equip()
 
 def initialize_fov():
     global fov_recompute, fov_map
