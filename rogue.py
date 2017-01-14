@@ -118,7 +118,7 @@ class Object:
                     self.x += dx
                     self.y += dy
             else:
-                global latitude, longitude, chunks, trees
+                global latitude, longitude, chunks, trees, distance_from_center
                 render_all()
                 if self.x + dx >= MAP_WIDTH:
                     longitude = longitude + 1
@@ -128,6 +128,7 @@ class Object:
                             self.x = 0
                             libtcod.console_clear(con)
                             chunk.load()
+                            distance_from_center = abs(latitude) + abs(longitude)
                             return
                     self.x = 0
                     libtcod.console_clear(con)
@@ -140,6 +141,7 @@ class Object:
                         if chunk.latitude == latitude and chunk.longitude == longitude:
                             self.x = MAP_WIDTH - 1
                             chunk.load()
+                            distance_from_center = abs(latitude) + abs(longitude)
                             return
                     self.x = MAP_WIDTH - 1
                     libtcod.console_clear(con)
@@ -153,6 +155,7 @@ class Object:
                             self.y = 0
                             libtcod.console_clear(con)
                             chunk.load()
+                            distance_from_center = abs(latitude) + abs(longitude)
                             return
                     self.y = 0
                     libtcod.console_clear(con)
@@ -166,10 +169,13 @@ class Object:
                             self.y = MAP_HEIGHT - 1
                             libtcod.console_clear(con)
                             chunk.load()
+                            distance_from_center = abs(latitude) + abs(longitude)
                             return
                     self.y = MAP_HEIGHT - 1
                     libtcod.console_clear(con)
                     make_forest()
+                distance_from_center = abs(latitude) + abs(longitude)
+                print distance_from_center
 
         else:
             if not is_blocked(self.x + dx, self.y + dy):
@@ -681,10 +687,10 @@ def random_choice(chances_dict):
 
     return strings[random_choice_index(chances)]
 
-def from_dungeon_level(table):
+def from_distance(table):
     #Returns a value that depends on level, the table specifies what value occurs after each level, default is 0
-    for (value, level) in reversed(table):
-        if dungeon_level >= level:
+    for (value, distance) in reversed(table):
+        if distance_from_center >= distance:
             return value
     return 0
 
@@ -694,24 +700,24 @@ def place_objects(room):
     num_mobs = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
 
     #Maximum number of mobs per room
-    max_mobs = from_dungeon_level([[2, 1], [3, 4], [5, 6]])
+    max_mobs = from_distance([[2, 1], [3, 4], [5, 6]])
 
     #Chance of each mob
     mob_chances = {}
-    mob_chances['squirrel'] = 80 #Orc always shows up even if all other mobs have 0 chance
-    mob_chances['rabbit'] = from_dungeon_level([[15, 3], [30, 5], [60, 7]])
+    mob_chances['squirrel'] = 80 #Bear always shows up even if all other mobs have 0 chance
+    mob_chances['rabbit'] = from_distance([[15, 3], [30, 5], [60, 7]])
 
     #Maximum number of items per room
-    max_items = from_dungeon_level([[1, 1], [2, 4]])
+    max_items = from_distance([[1, 1], [2, 4]])
 
     #Chance of each item (by default they have a chance of 0 at level 1, which then goes up)
     item_chances = {}
     item_chances['heal'] =      35 #Healing potion always shows up, even if all other items have 0 chance
-    item_chances['lightning'] = from_dungeon_level([[25, 4]])
-    item_chances['fireball'] =  from_dungeon_level([[25, 6]])
-    item_chances['confuse'] =   from_dungeon_level([[10, 2]])
-    item_chances['sword'] =     from_dungeon_level([[5, 4]])
-    item_chances['shield'] =    from_dungeon_level([[15, 8]])
+    item_chances['lightning'] = from_distance([[25, 4]])
+    item_chances['fireball'] =  from_distance([[25, 6]])
+    item_chances['confuse'] =   from_distance([[10, 2]])
+    item_chances['sword'] =     from_distance([[5, 4]])
+    item_chances['shield'] =    from_distance([[15, 8]])
 
     rubble_chances = {'tree': 1, 'none': 19}
     
@@ -750,15 +756,15 @@ def place_objects(room):
         if not is_blocked(x, y):
             choice = random_choice(mob_chances)
             if choice == 'squirrel':
-                #Create an orc
+                #Create a squirrel
                 fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = mob_death)
                 ai_component = BasicMob()
                 
                 mob = Object(x, y, 's', 'squirrel', libtcod.Color(139, 69, 19), blocks = True, 
                         fighter = fighter_component, ai = ai_component)
-            elif choice == 'rabbit':
-                #Create a troll
-                fighter_component = Fighter(hp = 16, defense = 1, power = 4, xp = 100, death_function = mob_death)
+            elif choice == 'bear':
+                #Create a bear
+                fighter_component = Fighter(hp = 16, defense = 10, power = 15, xp = 100, death_function = mob_death)
                 ai_component = BasicMob()
                 
                 mob = Object(x, y, 'R', 'rabbit', libtcod.darker_green, blocks = True, 
@@ -930,7 +936,7 @@ def render_all():
             libtcod.darker_green, libtcod.darkest_green)
 
     #Print dungeon level
-    libtcod.console_print_ex(panel, 1, 4, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon Level: ' + str(dungeon_level))
+    libtcod.console_print_ex(panel, 1, 4, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon Level: ' + str(distance_from_center))
     libtcod.console_print_ex(panel, 1, 5, libtcod.BKGND_NONE, libtcod.LEFT, 'Player Level: ' + str(player.level))
 
     #Display names of objects under the mouse
@@ -1163,7 +1169,7 @@ def cast_confuse():
 ##################################
 
 def new_game():
-    global player, inventory, game_msgs, game_state, dungeon_level, latitude, longitude, chunks
+    global player, inventory, game_msgs, game_state, distance_from_center, latitude, longitude, chunks
     
     #Create object representing player
     fighter_component = Fighter(hp = 30, defense = 2, power = 5, xp = 0, inventory = 0, death_function = player_death)
@@ -1176,7 +1182,7 @@ def new_game():
     chunks = []
 
     #Generate Map
-    dungeon_level = 1
+    distance_from_center = 0
     make_forest()
     initialize_fov()
 
@@ -1277,12 +1283,12 @@ def save_game():
     file['game_msgs'] = game_msgs
     file['game_state'] = game_state
 #    file['stairs_index'] = objects.index(stairs) #Index of stairs in object list
-    file['dungeon_level'] = dungeon_level
+    file['distance_from_center'] = distance_from_center
     file.close()
 
 def load_game():
     #Open previously saved shelve and load game data
-    global map, objects, player, inventory, game_msgs, game_state, stairs, dungeon_level
+    global map, objects, player, inventory, game_msgs, game_state, stairs, distance_from_center
 
     file = shelve.open('savegame', 'r')
     map = file['map']
@@ -1292,7 +1298,7 @@ def load_game():
     game_msgs = file['game_msgs']
     game_state = file['game_state']
 #    stairs = objects[file['stairs_index']] #Get index of stairs in objects list and access it
-    dungeon_level = file['dungeon_level']
+    distance_from_center = file['distance_from_center']
     file.close()
 
     initialize_fov()
