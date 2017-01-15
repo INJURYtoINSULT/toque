@@ -705,7 +705,7 @@ def place_objects(room):
     #Chance of each mob
     mob_chances = {}
     mob_chances['squirrel'] = 80 #Bear always shows up even if all other mobs have 0 chance
-    mob_chances['rabbit'] = from_distance([[15, 3], [30, 5], [60, 7]])
+    mob_chances['bear'] = from_distance([[15, 3], [30, 5], [60, 7]])
 
     #Maximum number of items per room
     max_items = from_distance([[1, 1], [2, 4]])
