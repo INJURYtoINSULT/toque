@@ -210,6 +210,11 @@ class Object:
         objects.remove(self)
         objects.insert(0, self)
 
+    def send_to_front(self):
+        global objects
+        objects.remove(self)
+        objects.append(self)
+
     def draw(self):
         #Only show if it is in fov
         if (libtcod.map_is_in_fov(fov_map, self.x, self.y) or
@@ -331,6 +336,7 @@ class Item:
             objects.remove(self.owner)
             self.owner.equipment.equip()            
         elif len(inventory) >= player.fighter.inventory:
+            self.owner.send_to_front()
             message('Your inventory is full, cannot pick up ' + self.owner.name + '.', libtcod.red)
         else:
             inventory.append(self.owner)
