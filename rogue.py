@@ -732,7 +732,7 @@ def place_objects(room):
     for y in range(MAP_HEIGHT):
         for x in range(MAP_WIDTH):
             if (random_choice(rubble_chances) == 'tree'):
-                tree = Object(x, y, 179, 'tree', libtcod.darker_sepia, blocks=True)
+                tree = Object(x, y, 179, 'white spruce', libtcod.darker_sepia, blocks=True)
                 trees.append(tree)
                 objects.append(tree)
     
@@ -766,14 +766,14 @@ def place_objects(room):
                 fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = mob_death)
                 ai_component = BasicMob()
                 
-                mob = Object(x, y, 's', 'squirrel', libtcod.Color(139, 69, 19), blocks = True, 
+                mob = Object(x, y, 's', 'eastern fox squirrel', libtcod.Color(139, 69, 19), blocks = True, 
                         fighter = fighter_component, ai = ai_component)
             elif choice == 'bear':
                 #Create a bear
                 fighter_component = Fighter(hp = 16, defense = 10, power = 15, xp = 100, death_function = mob_death)
                 ai_component = BasicMob()
                 
-                mob = Object(x, y, 'R', 'rabbit', libtcod.darker_green, blocks = True, 
+                mob = Object(x, y, 'B', 'brown bear', libtcod.Color(139, 69, 19), blocks = True, 
                         fighter = fighter_component, ai = ai_component)
 
             objects.append(mob)
