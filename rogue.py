@@ -178,9 +178,27 @@ class Object:
                 print distance_from_center
 
         else:
-            if not is_blocked(self.x + dx, self.y + dy):
-                self.x += dx
-                self.y += dy
+            if not is_map_edge(self.x + dx, self.y + dy):
+                if not is_blocked(self.x + dx, self.y + dy):
+                    self.x += dx
+                    self.y += dy
+            else:
+                if self.x + dx >= MAP_WIDTH:
+                    message('The ' + self.name + ' flees!', libtcod.yellow)
+                    self.clear()
+                    objects.remove(self)
+                elif self.x + dx < 0:
+                    message('The ' + self.name + ' flees!', libtcod.yellow)
+                    self.clear()
+                    objects.remove(self)
+                elif self.y + dy >= MAP_HEIGHT:
+                    message('The ' + self.name + ' flees!', libtcod.yellow)
+                    self.clear()
+                    objects.remove(self)
+                elif self.y + dy < 0:
+                    message('The ' + self.name + ' flees!', libtcod.yellow)
+                    self.clear()
+                    objects.remove(self)
 
     def move_toward(self, target_x, target_y):
         #Vector from this object to the target
@@ -192,6 +210,16 @@ class Object:
         #convert it to integer so the movement is restricted to the map grid
         dx = int(round(dx / distance))
         dy = int(round(dy / distance))
+        self.move(dx, dy)
+    
+    def move_away(self, target_x, target_y):
+        #Vector from this object away from the target
+        dx = target_x - self.x
+        dy = target_y - self.y
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+
+        dx = (-1) * int(round(dx / distance))
+        dy = (-1) * int(round(dy / distance))
         self.move(dx, dy)
 
     def distance_to(self, other):
@@ -306,6 +334,13 @@ class BasicMob:
             #Close enough, attack (if player is alive)
             elif player.fighter.hp > 0:
                 mob.fighter.attack(player)
+
+class SkittishMob:
+    #Ai for small easily frightened woodland creatures
+    def take_turn(self):
+        mob = self.owner
+        if mob.distance_to(player) < 5:
+            mob.move_away(player.x, player.y)            
 
 class ConfusedMob:
     #AI for temporarily confused mob (Reverts to previous ai after a while)
@@ -764,7 +799,7 @@ def place_objects(room):
             if choice == 'squirrel':
                 #Create a squirrel
                 fighter_component = Fighter(hp = 10, defense = 0, power = 3, xp = 35, death_function = mob_death)
-                ai_component = BasicMob()
+                ai_component = SkittishMob()
                 
                 mob = Object(x, y, 's', 'eastern fox squirrel', libtcod.Color(139, 69, 19), blocks = True, 
                         fighter = fighter_component, ai = ai_component)
