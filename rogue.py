@@ -24,7 +24,7 @@ CHARACTER_SCREEN_WIDTH = 30
 
 #Spell values
 HEAL_AMOUNT = 4
-LIGHTNING_DAMAGE = 20
+ROCK_DAMAGE = 20
 LIGHTNING_RANGE = 5
 CONFUSE_NUM_TURNS = 10
 CONFUSE_RANGE = 8
@@ -46,7 +46,7 @@ ROOM_MAX_SIZE = 10
 ROOM_MIN_SIZE = 6
 MAX_ROOMS = 30
 MAX_ROOM_MONSTERS = 3
-MAX_ROOM_ITEMS = 2
+MAX_ROOM_ITEMS = 5
 
 FOV_ALGO = 0
 FOV_LIGHT_WALLS = True
@@ -753,8 +753,8 @@ def place_objects(room):
 
     #Chance of each item (by default they have a chance of 0 at level 1, which then goes up)
     item_chances = {}
-    item_chances['heal'] =      35 #Healing potion always shows up, even if all other items have 0 chance
-    item_chances['lightning'] = from_distance([[25, 4]])
+    item_chances['heal'] =      20 #Healing potion always shows up, even if all other items have 0 chance
+    item_chances['rock'] =      35
     item_chances['fireball'] =  from_distance([[25, 6]])
     item_chances['confuse'] =   from_distance([[10, 2]])
     item_chances['sword'] =     from_distance([[5, 4]])
@@ -830,15 +830,15 @@ def place_objects(room):
                 
                 item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
             
-            elif choice == 'lightning':
+            elif choice == 'rock':
                 #Create a lightning bolt scroll (10% chance)
-                item_component = Item(use_function = cast_fireball)
+                item_component = Item(use_function = throw_rock)
 
-                item = Object(x, y, '#', 'scroll of fireball', libtcod.light_yellow, item=item_component)
+                item = Object(x, y, 'o', 'hefty rock', libtcod.grey, item=item_component)
             
             elif choice == 'fireball':
                 #Create a fireball scroll (10% chance)
-                item_component = Item(use_function = cast_lightning)
+                item_component = Item(use_function = throw_rock)
 
                 item = Object(x, y, '#', 'scroll of lightning bolt', libtcod.light_yellow, item=item_component)
             
@@ -1170,16 +1170,36 @@ def cast_heal():
     message('Your wounds start to feel better', libtcod.light_violet)
     player.fighter.heal(HEAL_AMOUNT)
 
-def cast_lightning():
-    #Find the closest enemy (inside a maximum range) and damage it
-    mob = closest_mob(LIGHTNING_RANGE)
+def throw_rock():
+    #Throw a rock at a target and damage it
+    
+    mob = None
+
+    message('Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan)
+    (x, y) = target_tile()
+    if x is None: return 'cancelled'
+    for obj in objects:
+        if obj.x == x and obj.y == y:
+            mob = obj
     if mob is None: #No enemy within maximum range
         message('No enemy is close enough to strike.', libtcod.red)
         return 'cancelled'
+    
+    distance = mob.distance_to(player)
+    distance = int(round(distance))
 
-    #Zap it
-    message('A lightning bolt strikes the ' + mob.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
-    mob.fighter.take_damage(LIGHTNING_DAMAGE)
+    hit_chances = {}
+    hit_chances['hit'] = 5 
+    hit_chances['miss'] = 1 * distance
+    choice = random_choice(hit_chances)
+    
+    if choice == 'hit':
+        #Zap it
+        message('A rock strikes the ' + mob.name + ' with a thud! The damage is ' + str(ROCK_DAMAGE) + ' hit points.', libtcod.light_blue)
+        mob.fighter.take_damage(ROCK_DAMAGE)
+    else:
+        message('The rock misses!')
+        
 
 def cast_fireball():
     #Ask the player for a target tile to throw a fireball at
