@@ -529,7 +529,7 @@ def menu(header, options, width):
 
     #Present the root console to the player and wait for a key-press
     libtcod.console_flush()
-    key = libtcod.console_wait_for_keypress(True)
+    key = libtcod.console_wait_for_keypress(False)
 
     if key.vk == libtcod.KEY_ENTER and key.lalt: #Alt+Enter: toggle fullscreen
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -1036,31 +1036,31 @@ def handle_keys():
             #Test for other keys
             key_char = chr(key.c)
 
-            if key_char == 'g':
+            if key.c == ord('g'):
                 #Pick up item
                 for object in objects:
                     if object.x == player.x and object.y == player.y and object.item:
                         object.item.pick_up()
                         break
 
-            if key_char == 'i':
+            if key.c == ord('i'):
                 #Show the inventory; if an item is selected use it
                 chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.use()
 
-            if key_char == 'd':
+            if key.c == ord('d'):
                 #Show the inventory; if an item is selected, drop it
                 chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
                 if chosen_item is not None:
                     chosen_item.drop()
             
-            if key_char == 'e':
+            if key.c == ord('e'):
                 #Go down stairs if player is standing on them
                 if stairs.x == player.x and stairs.y == player.y:
                     next_level()
 
-            if key_char == 'c':
+            if key.c == ord('c'):
                 #Show character information
                 level_up_xp = LEVEL_UP_BASE + player.level * LEVEL_UP_FACTOR
                 msgbox('Character information\n\nLevel: ' + str(player.level) +
