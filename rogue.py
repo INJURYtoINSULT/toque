@@ -1189,7 +1189,7 @@ def throw_rock():
     distance = int(round(distance))
 
     hit_chances = {}
-    hit_chances['hit'] = 5 
+    hit_chances['hit'] = 1
     hit_chances['miss'] = 1 * distance
     choice = random_choice(hit_chances)
     
