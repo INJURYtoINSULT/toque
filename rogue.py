@@ -758,7 +758,7 @@ def place_objects(room):
     item_chances['fireball'] =  from_distance([[25, 6]])
     item_chances['confuse'] =   from_distance([[10, 2]])
     item_chances['sword'] =     from_distance([[5, 4]])
-    item_chances['shield'] =    from_distance([[15, 8]])
+    item_chances['backpack'] =  from_distance([[15, 5]])
 
     rubble_chances = {'tree': 1, 'none': 19}
     
@@ -853,10 +853,10 @@ def place_objects(room):
                 equipment_component = Equipment(slot='right hand', power_bonus=3)
                 item = Object(x, y, '/', 'sword', libtcod.sky, equipment=equipment_component)
 
-            elif choice == 'shield':
-                #Create a shield
-                equipment_component = Equipment(slot='left hand', defense_bonus=1)
-                item = Object(x, y, '[', 'shield', libtcod.darker_orange, equipment=equipment_component)
+            elif choice == 'backpack':
+                #Create a backpack
+                equipment_component = Equipment(slot='back', inventory_bonus=10)
+                item = Object(x, y, 'D', 'backpack', libtcod.black, equipment=equipment_component)
             
             objects.append(item)
             item.send_to_back() #Items appear below other items
