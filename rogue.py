@@ -80,7 +80,6 @@ class Chunk:
         global objects
         objects = [] 
         objects = self.objects
-        print str(len(objects))
 
 class Object:
     #Generic object
@@ -123,7 +122,6 @@ class Object:
                 if self.x + dx >= MAP_WIDTH:
                     longitude = longitude + 1
                     for chunk in chunks:
-                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
                         if chunk.latitude == latitude and chunk.longitude == longitude:
                             self.x = 0
                             libtcod.console_clear(con)
@@ -137,7 +135,6 @@ class Object:
                 elif self.x + dx < 0:
                     longitude = longitude - 1
                     for chunk in chunks:
-                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
                         if chunk.latitude == latitude and chunk.longitude == longitude:
                             self.x = MAP_WIDTH - 1
                             chunk.load()
@@ -150,7 +147,6 @@ class Object:
                 elif self.y + dy >= MAP_HEIGHT:
                     latitude = latitude + 1
                     for chunk in chunks:
-                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
                         if chunk.latitude == latitude and chunk.longitude == longitude:
                             self.y = 0
                             libtcod.console_clear(con)
@@ -164,7 +160,6 @@ class Object:
                 elif self.y + dy < 0:
                     latitude = latitude - 1
                     for chunk in chunks:
-                        print str(chunk.longitude) + ', ' + str(chunk.latitude)
                         if chunk.latitude == latitude and chunk.longitude == longitude:
                             self.y = MAP_HEIGHT - 1
                             libtcod.console_clear(con)
@@ -175,7 +170,6 @@ class Object:
                     libtcod.console_clear(con)
                     make_forest()
                 distance_from_center = abs(latitude) + abs(longitude)
-                print distance_from_center
 
         else:
             if not is_map_edge(self.x + dx, self.y + dy):
@@ -620,9 +614,7 @@ def make_forest():
     place_objects(Rect(1, 1, MAP_WIDTH - 1, MAP_HEIGHT - 1))
     new_chunk = Chunk(longitude, latitude, objects)
     if not any(chunk.latitude == latitude for chunk in chunks) or not any(chunk.longitude == longitude for chunk in chunks):
-        print 'New chunk: ' + str(new_chunk.latitude) + ', ' + str(new_chunk.longitude)
         chunks.append(new_chunk)
-    print str(len(objects))
 
 #def load_forest(Chunk):
 #    objects = []
@@ -868,7 +860,6 @@ def is_blocked(x, y):
 
     #Now check Objects
     for object in objects:
-    #    print
         if object.blocks and object.x == x and object.y == y:
             return True
     return False
