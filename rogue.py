@@ -745,7 +745,7 @@ def place_objects(room):
 
     #Chance of each item (by default they have a chance of 0 at level 1, which then goes up)
     item_chances = {}
-    item_chances['heal'] =      20 #Healing potion always shows up, even if all other items have 0 chance
+    item_chances['cloth'] =     20
     item_chances['rock'] =      35
     item_chances['fireball'] =  from_distance([[25, 6]])
     item_chances['confuse'] =   from_distance([[10, 2]])
@@ -816,11 +816,11 @@ def place_objects(room):
         #Only place it if the tile is not blocked
         if not is_blocked(x, y):
             choice = random_choice(item_chances)
-            if choice == 'heal':
-                #Create a healing potion(70% chance)
+            if choice == 'cloth':
+                #Create a cloth
                 item_component = Item(use_function = cast_heal)
                 
-                item = Object(x, y, '!', 'healing potion', libtcod.violet, item = item_component)
+                item = Object(x, y, 'c', 'scrap of cloth', libtcod.violet, item = item_component)
             
             elif choice == 'rock':
                 #Create a lightning bolt scroll (10% chance)
